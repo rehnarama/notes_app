@@ -9,6 +9,7 @@ interface Props {
   requestEditingState: (index: number, editing: boolean) => void;
   requestMerge: (index: number, direction: number) => void;
   requestSplit: (index: number, atPosition: number) => void;
+  requestMove: (index: number, direction: number) => void;
   index: number;
   isEditing: boolean;
   mergedAt?: number;
@@ -78,7 +79,7 @@ class MarkdownElement extends React.PureComponent<Props> {
     this.setCursorPosition();
   }
 
-  handleOnKeyPress: React.KeyboardEventHandler<HTMLTextAreaElement> = event => {
+  handleOnKeyUp: React.KeyboardEventHandler<HTMLTextAreaElement> = event => {
     if (this.textAreaRef.current === null) {
       return;
     }
@@ -102,6 +103,23 @@ class MarkdownElement extends React.PureComponent<Props> {
     }
   };
 
+  handleOnKeyDown: React.KeyboardEventHandler<HTMLTextAreaElement> = event => {
+    const selectionStart = this.textAreaRef.current.selectionStart;
+    const selectionEnd = this.textAreaRef.current.selectionEnd;
+
+    if (event.key === "ArrowUp" && selectionEnd === 0) {
+      event.preventDefault();
+      this.props.requestMove(this.props.index, -1);
+    }
+    if (
+      event.key === "ArrowDown" &&
+      selectionStart === this.props.content.length
+    ) {
+      event.preventDefault();
+      this.props.requestMove(this.props.index, 1);
+    }
+  };
+
   handleOnChange: React.ChangeEventHandler<HTMLTextAreaElement> = event => {
     const value = event.currentTarget.value;
     this.props.onChange(this.props.index, value);
@@ -117,7 +135,8 @@ class MarkdownElement extends React.PureComponent<Props> {
           value={content}
           onChange={this.handleOnChange}
           onBlur={this.handleOnBlur}
-          onKeyUp={this.handleOnKeyPress}
+          onKeyUp={this.handleOnKeyUp}
+          onKeyDown={this.handleOnKeyDown}
           ref={this.textAreaRef}
         />
       );

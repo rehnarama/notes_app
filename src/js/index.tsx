@@ -1,7 +1,9 @@
 import * as React from "react";
 import { render } from "react-dom";
 
+import "highlight.js/styles/default.css";
 import md from "markdown-it";
+import hljs from "highlight.js";
 import katexMarkdownPlugin from "./katex-markdown-it";
 
 import App from "./App";
@@ -9,7 +11,17 @@ import App from "./App";
 import "../style/main.scss";
 
 function start() {
-  const parser = md();
+  const parser = md({
+    highlight: function(str, lang) {
+      if (lang && hljs.getLanguage(lang)) {
+        try {
+          return hljs.highlight(lang, str).value;
+        } catch (__) {}
+      }
+
+      return ""; // use external default escaping
+    }
+  });
   parser.use(katexMarkdownPlugin);
 
   const appElement = document.getElementById("app");

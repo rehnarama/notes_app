@@ -2,6 +2,26 @@ import * as React from "react";
 import { MarkdownIt } from "markdown-it";
 import MarkdownElement from "./MarkdownElement";
 
+const DEFAULT_CONTENT = `# Notes
+
+**Math**: $ x = \\frac{\\sqrt{\\sigma}}{\\theta^2} $
+
+______________________________
+
+*Cursive text*
+
+Code blocks with syntax highlighting:
+\`\`\`c
+int main(int argc, char *argv[]) {
+  std::cout << \"Hello World!\\n\";
+}
+\`\`\`
+
+| Tables        | Are           | Cool  |
+| ------------- |:-------------:| -----:|
+| col 3 is      | right-aligned | $1600 |
+| col 2 is      | centered      |   $12 |
+| zebra stripes | are neat      |    $1 |`;
 const CONTENT_KEY = "content";
 
 interface Props {
@@ -14,11 +34,15 @@ interface State {
   mergedAt?: number;
 }
 
+function clamp(num: number, lowerBound: number, upperBound: number) {
+  return Math.max(lowerBound, Math.min(num, upperBound));
+}
+
 class App extends React.Component<Props, State> {
   constructor(props: Props) {
     super(props);
 
-    const content = window.localStorage.getItem(CONTENT_KEY) || "# Notes";
+    const content = window.localStorage.getItem(CONTENT_KEY) || DEFAULT_CONTENT;
     this.state = {
       content,
       fragments: this.parseFragments(content),
@@ -128,7 +152,7 @@ class App extends React.Component<Props, State> {
 
   handleOnRequestEditingState = (index: number, editing: boolean) => {
     if (editing) {
-      this.setState(({ fragments}) => ({
+      this.setState(({ fragments }) => ({
         editing: index,
         mergedAt: fragments[index].length
       }));
@@ -147,6 +171,20 @@ class App extends React.Component<Props, State> {
     }
   };
 
+  handleOnRequestMove = (index: number, direction: number) => {
+    this.setState(({ editing, fragments }) => {
+      const newEditing = clamp(
+        editing + Math.sign(direction),
+        0,
+        fragments.length - 1
+      );
+      return {
+        editing: newEditing,
+        mergedAt: direction > 0 ? 0 : fragments[newEditing].length
+      };
+    });
+  };
+
   render() {
     const { md } = this.props;
     const { fragments, editing, mergedAt } = this.state;
@@ -162,6 +200,7 @@ class App extends React.Component<Props, State> {
             requestEditingState={this.handleOnRequestEditingState}
             requestMerge={this.handleOnRequestMerge}
             requestSplit={this.handleOnRequestSplit}
+            requestMove={this.handleOnRequestMove}
             isEditing={index === editing}
             index={index}
             mergedAt={mergedAt}
