@@ -1,6 +1,7 @@
 {
   "scripts": {
-    "start": "parcel src/index.html"
+    "start": "parcel src/index.html",
+    "build": "parcel build src/index.html --public-url ./"
   },
   "devDependencies": {
     "@types/katex": "^0.5.0",
