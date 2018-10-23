@@ -167,4 +167,4 @@ var t,e=arguments[3];!function(e,r){"object"==typeof exports&&"object"==typeof m
 },{}],"BThG":[function(require,module,exports) {
 "use strict";var e=this&&this.__importStar||function(e){if(e&&e.__esModule)return e;var r={};if(null!=e)for(var t in e)Object.hasOwnProperty.call(e,t)&&(r[t]=e[t]);return r.default=e,r},r=this&&this.__importDefault||function(e){return e&&e.__esModule?e:{default:e}};exports.__esModule=!0;var t=e(require("react")),a=require("react-dom"),u=r(require("markdown-it")),i=r(require("./katex-markdown-it")),n=r(require("./App"));function d(){var e=u.default();e.use(i.default);var r=document.getElementById("app");a.render(t.createElement(n.default,{md:e}),r)}require("../style/main.scss"),"complete"===document.readyState?d():window.addEventListener("load",d);
 },{"react":"1n8/","react-dom":"NKHc","markdown-it":"gOsT","./katex-markdown-it":"24E9","./App":"LZxL","../style/main.scss":"IrIc"}]},{},["BThG"], null)
-//# sourceMappingURL=/js.6acc3a18.map
+//# sourceMappingURL=js.6acc3a18.map
