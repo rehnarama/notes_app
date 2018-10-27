@@ -206,8 +206,27 @@ class App extends React.Component<Props, State> {
     }));
   };
 
+  insertNewFragment = (
+    atIndex: number,
+    focus: boolean = false,
+    edit: boolean = false
+  ) => {
+    const newFragments = Array.from(this.state.fragments);
+    newFragments.splice(atIndex, 0, "");
+    const newContent = newFragments.join("\n\n");
+    this.setState(({ focused, editing }) => ({
+      fragments: newFragments,
+      content: newContent,
+      focused: focus ? atIndex : focused,
+      editing: edit ? atIndex : editing
+    }));
+  };
+
   handleOnKeyPress = (event: KeyboardEvent) => {
     if (this.state.editing === null) {
+      const curTabIndex = document.activeElement.attributes["tabIndex"];
+      const curFocus = curTabIndex ? Number.parseInt(curTabIndex.value) : null;
+
       console.log(event.key);
       switch (event.key) {
         case "j":
@@ -227,6 +246,19 @@ class App extends React.Component<Props, State> {
               focused: 0
             }));
           }
+          break;
+        case "o":
+          if (curFocus !== null) {
+            this.insertNewFragment(curFocus, true, true);
+          }
+          break;
+        case "O":
+          if (curFocus !== null) {
+            this.insertNewFragment(curFocus - 1, true, true);
+          }
+          break;
+        case "Escape":
+          document.activeElement.blur();
           break;
         default:
           break;
