@@ -2,6 +2,15 @@ import * as React from "react";
 import { MarkdownIt } from "markdown-it";
 import AutoTextarea from "./AutoTextarea";
 
+enum EditChangeReason {
+  Move,
+  Escape,
+  Split,
+  Merge,
+  Enter
+}
+export { EditChangeReason };
+
 interface Props {
   md: MarkdownIt;
   content: string;
@@ -14,6 +23,7 @@ interface Props {
   index: number;
   isEditing: boolean;
   mergedAt?: number;
+  editChange?: EditChangeReason;
 }
 
 interface State {
@@ -23,6 +33,7 @@ interface State {
 class MarkdownElement extends React.PureComponent<Props> {
   textAreaRef = React.createRef<HTMLTextAreaElement>();
   mdRef = React.createRef<HTMLDivElement>();
+  isMoving = false;
 
   constructor(props: Props) {
     super(props);
@@ -33,6 +44,7 @@ class MarkdownElement extends React.PureComponent<Props> {
   }
 
   handleOnBlur = () => {
+    console.log("here", this.props.index);
     this.props.requestEditingState(this.props.index, false);
   };
   handleOnClick = () => {
@@ -72,12 +84,18 @@ class MarkdownElement extends React.PureComponent<Props> {
       this.textAreaRef.current.style.minHeight = snapshot + "px";
     }
 
-    if (prevProps.isEditing && !this.props.isEditing && this.mdRef.current) {
+    if (
+      prevProps.isEditing &&
+      !this.props.isEditing &&
+      this.props.editChange === EditChangeReason.Escape &&
+      this.mdRef.current
+    ) {
+      console.log("focusing md1", this.props.index);
       this.mdRef.current.focus();
     }
 
     if (this.props.focused && !prevProps.focused && this.mdRef.current) {
-      console.log("focusing");
+      console.log("focusing md2");
       this.mdRef.current.focus();
     }
 
@@ -150,8 +168,6 @@ class MarkdownElement extends React.PureComponent<Props> {
       }
     }
   };
-
-
 
   render() {
     const { md, content, isEditing, index } = this.props;

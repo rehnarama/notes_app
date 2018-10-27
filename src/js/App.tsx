@@ -1,6 +1,6 @@
 import * as React from "react";
 import { MarkdownIt } from "markdown-it";
-import MarkdownElement from "./MarkdownElement";
+import MarkdownElement, { EditChangeReason } from "./MarkdownElement";
 
 const DEFAULT_CONTENT = `# Notes
 
@@ -33,6 +33,7 @@ interface State {
   editing: number | null;
   mergedAt?: number;
   focused: number | null;
+  editChangeReason?: EditChangeReason;
 }
 
 function clamp(num: number, lowerBound: number, upperBound: number) {
@@ -80,6 +81,7 @@ class App extends React.Component<Props, State> {
           fragments: newFragments,
           content: newContent,
           editing: Math.min(editing + 1, newFragments.length - 1),
+          editChangeReason: EditChangeReason.Split,
           mergedAt: undefined
         };
       } else {
@@ -132,7 +134,8 @@ class App extends React.Component<Props, State> {
       fragments: newFragments,
       content: newContent,
       editing: newIndex,
-      mergedAt: toMerge[0].length
+      mergedAt: toMerge[0].length,
+      editChangeReason: EditChangeReason.Merge
     }));
   };
 
@@ -150,7 +153,8 @@ class App extends React.Component<Props, State> {
       fragments: newFragments,
       content: newContent,
       editing: editing + 1,
-      mergedAt: undefined
+      mergedAt: undefined,
+      editChangeReason: EditChangeReason.Split
     }));
   };
 
@@ -170,7 +174,8 @@ class App extends React.Component<Props, State> {
         editing: null,
         content: newContent,
         fragments: newFragments,
-        mergedAt: undefined
+        mergedAt: undefined,
+        editChangeReason: EditChangeReason.Escape
       }));
     }
   };
@@ -184,7 +189,9 @@ class App extends React.Component<Props, State> {
       );
       return {
         editing: newEditing,
-        mergedAt: direction > 0 ? 0 : fragments[newEditing].length
+        focused: newEditing,
+        mergedAt: direction > 0 ? 0 : fragments[newEditing].length,
+        editChangeReason: EditChangeReason.Move
       };
     });
   };
@@ -275,7 +282,7 @@ class App extends React.Component<Props, State> {
 
   render() {
     const { md } = this.props;
-    const { fragments, editing, mergedAt, focused } = this.state;
+    const { fragments, editing, mergedAt, focused, editChangeReason } = this.state;
 
     return (
       <React.Fragment>
@@ -293,6 +300,7 @@ class App extends React.Component<Props, State> {
             index={index}
             focused={index === focused}
             mergedAt={mergedAt}
+            editChange={editChangeReason}
           />
         ))}
       </React.Fragment>
