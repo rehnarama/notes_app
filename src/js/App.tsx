@@ -40,6 +40,8 @@ function clamp(num: number, lowerBound: number, upperBound: number) {
 }
 
 class App extends React.Component<Props, State> {
+  lastKey: string = "";
+
   constructor(props: Props) {
     super(props);
 
@@ -194,28 +196,43 @@ class App extends React.Component<Props, State> {
     document.removeEventListener("keypress", this.handleOnKeyPress);
   }
 
+  focusNext = (delta: number) => {
+    const curTabIndex = document.activeElement.attributes["tabIndex"];
+    const curFocus = curTabIndex ? Number.parseInt(curTabIndex.value) : null;
+
+    this.setState(() => ({
+      // -1 since tabIndex is 1-based instead of 0-based as index are
+      focused: curFocus ? curFocus + delta - 1 : 0
+    }));
+  };
+
   handleOnKeyPress = (event: KeyboardEvent) => {
     if (this.state.editing === null) {
-      let deltaFocusIndex = 0;
-      const curTabIndex = document.activeElement.attributes["tabIndex"];
-      const curFocus = curTabIndex ? Number.parseInt(curTabIndex.value) : null;
-
+      console.log(event.key);
       switch (event.key) {
         case "j":
-          deltaFocusIndex++;
+          this.focusNext(1);
           break;
         case "k":
-          deltaFocusIndex--;
+          this.focusNext(-1);
+          break;
+        case "G":
+          this.setState(({ fragments }) => ({
+            focused: fragments.length - 1
+          }));
+          break;
+        case "g":
+          if (this.lastKey === "g") {
+            this.setState(() => ({
+              focused: 0
+            }));
+          }
           break;
         default:
-          return;
+          break;
       }
 
-      console.log(curFocus);
-      this.setState(() => ({
-        // -1 since tabIndex is 1-based instead of 0-based as index are
-        focused: curFocus ? curFocus + deltaFocusIndex - 1 : 0
-      }));
+      this.lastKey = event.key;
     }
   };
 
@@ -224,7 +241,7 @@ class App extends React.Component<Props, State> {
     const { fragments, editing, mergedAt, focused } = this.state;
 
     return (
-      <div>
+      <React.Fragment>
         {fragments.map((fragment, index) => (
           <MarkdownElement
             key={index}
@@ -241,7 +258,7 @@ class App extends React.Component<Props, State> {
             mergedAt={mergedAt}
           />
         ))}
-      </div>
+      </React.Fragment>
     );
   }
 }
