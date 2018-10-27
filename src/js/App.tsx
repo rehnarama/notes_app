@@ -229,9 +229,11 @@ class App extends React.Component<Props, State> {
 
       console.log(event.key);
       switch (event.key) {
+        case "ArrowDown":
         case "j":
           this.focusNext(1);
           break;
+        case "ArrowUp":
         case "k":
           this.focusNext(-1);
           break;
@@ -258,7 +260,10 @@ class App extends React.Component<Props, State> {
           }
           break;
         case "Escape":
-          document.activeElement.blur();
+          try {
+            // Not all elements have blur, e.g. svg-elements! Hence the try-catch
+            (document.activeElement as HTMLElement).blur();
+          } catch {}
           break;
         default:
           break;

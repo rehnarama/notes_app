@@ -145,7 +145,7 @@ class MarkdownElement extends React.PureComponent<Props> {
     }
 
     if (document.activeElement === this.mdRef.current) {
-      if (event.key === "i") {
+      if (event.key === "i" || event.key === "Enter") {
         this.props.requestEditingState(this.props.index, true);
       }
     }
