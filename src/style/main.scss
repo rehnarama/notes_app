@@ -23,7 +23,6 @@ textarea {
   resize: none;
   font-family: sans-serif;
   font-size: 1rem;
-  box-shadow: 0 0 5px rgba(0, 0, 0, 0.4);
 }
 
 main#app {
@@ -42,4 +41,14 @@ main#app {
       flex: 1;
     }
   }
+}
+
+.markdownElement {
+  outline: none;
+}
+.markdownElement:hover {
+  border-left: 2px solid rgba(100, 100, 100, 1);
+}
+.markdownElement:focus {
+  border-left: 2px solid rgba(0, 0, 0, 1);
 }

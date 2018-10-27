@@ -32,6 +32,7 @@ interface State {
   fragments: string[];
   editing: number | null;
   mergedAt?: number;
+  focused: number | null;
 }
 
 function clamp(num: number, lowerBound: number, upperBound: number) {
@@ -46,7 +47,8 @@ class App extends React.Component<Props, State> {
     this.state = {
       content,
       fragments: this.parseFragments(content),
-      editing: null
+      editing: null,
+      focused: null
     };
   }
 
@@ -185,12 +187,44 @@ class App extends React.Component<Props, State> {
     });
   };
 
+  componentDidMount() {
+    document.addEventListener("keypress", this.handleOnKeyPress);
+  }
+  componentWillUnmount() {
+    document.removeEventListener("keypress", this.handleOnKeyPress);
+  }
+
+  handleOnKeyPress = (event: KeyboardEvent) => {
+    if (this.state.editing === null) {
+      let deltaFocusIndex = 0;
+      const curTabIndex = document.activeElement.attributes["tabIndex"];
+      const curFocus = curTabIndex ? Number.parseInt(curTabIndex.value) : null;
+
+      switch (event.key) {
+        case "j":
+          deltaFocusIndex++;
+          break;
+        case "k":
+          deltaFocusIndex--;
+          break;
+        default:
+          return;
+      }
+
+      console.log(curFocus);
+      this.setState(() => ({
+        // -1 since tabIndex is 1-based instead of 0-based as index are
+        focused: curFocus ? curFocus + deltaFocusIndex - 1 : 0
+      }));
+    }
+  };
+
   render() {
     const { md } = this.props;
-    const { fragments, editing, mergedAt } = this.state;
+    const { fragments, editing, mergedAt, focused } = this.state;
 
     return (
-      <React.Fragment>
+      <div>
         {fragments.map((fragment, index) => (
           <MarkdownElement
             key={index}
@@ -203,10 +237,11 @@ class App extends React.Component<Props, State> {
             requestMove={this.handleOnRequestMove}
             isEditing={index === editing}
             index={index}
+            focused={index === focused}
             mergedAt={mergedAt}
           />
         ))}
-      </React.Fragment>
+      </div>
     );
   }
 }

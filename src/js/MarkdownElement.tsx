@@ -10,6 +10,7 @@ interface Props {
   requestMerge: (index: number, direction: number) => void;
   requestSplit: (index: number, atPosition: number) => void;
   requestMove: (index: number, direction: number) => void;
+  focused: boolean;
   index: number;
   isEditing: boolean;
   mergedAt?: number;
@@ -65,10 +66,19 @@ class MarkdownElement extends React.PureComponent<Props> {
     return null;
   }
 
-  componentDidUpdate({}, {}, snapshot: number) {
+  componentDidUpdate(prevProps: Props, {}, snapshot: number) {
     this.focusTextArea();
     if (snapshot !== null && this.textAreaRef.current !== null) {
       this.textAreaRef.current.style.minHeight = snapshot + "px";
+    }
+
+    if (prevProps.isEditing && !this.props.isEditing && this.mdRef.current) {
+      this.mdRef.current.focus();
+    }
+
+    if (this.props.focused && !prevProps.focused && this.mdRef.current) {
+      console.log("focusing");
+      this.mdRef.current.focus();
     }
 
     this.setCursorPosition();
@@ -82,6 +92,10 @@ class MarkdownElement extends React.PureComponent<Props> {
   handleOnKeyUp: React.KeyboardEventHandler<HTMLTextAreaElement> = event => {
     if (this.textAreaRef.current === null) {
       return;
+    }
+
+    if (event.key === "Escape") {
+      this.props.requestEditingState(this.props.index, false);
     }
 
     const selectionStart = this.textAreaRef.current.selectionStart;
@@ -125,14 +139,29 @@ class MarkdownElement extends React.PureComponent<Props> {
     this.props.onChange(this.props.index, value);
   };
 
+  handleOnMdKeyPress: React.KeyboardEventHandler<HTMLDivElement> = event => {
+    if (this.mdRef.current === null) {
+      return;
+    }
+
+    if (document.activeElement === this.mdRef.current) {
+      if (event.key === "i") {
+        this.props.requestEditingState(this.props.index, true);
+      }
+    }
+  };
+
+
+
   render() {
-    const { md, content, isEditing } = this.props;
+    const { md, content, isEditing, index } = this.props;
 
     const renderedContent = md.render(content);
     if (isEditing) {
       return (
         <AutoTextarea
           value={content}
+          tabIndex={index + 1}
           onChange={this.handleOnChange}
           onBlur={this.handleOnBlur}
           onKeyUp={this.handleOnKeyUp}
@@ -144,8 +173,10 @@ class MarkdownElement extends React.PureComponent<Props> {
       return (
         <div
           className="markdownElement"
+          tabIndex={index + 1}
           dangerouslySetInnerHTML={{ __html: renderedContent }}
           onClick={this.handleOnClick}
+          onKeyPress={this.handleOnMdKeyPress}
           ref={this.mdRef}
         />
       );
