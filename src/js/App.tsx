@@ -234,7 +234,6 @@ class App extends React.Component<Props, State> {
       const curTabIndex = document.activeElement.attributes["tabIndex"];
       const curFocus = curTabIndex ? Number.parseInt(curTabIndex.value) : null;
 
-      console.log(event.key);
       switch (event.key) {
         case "ArrowDown":
         case "j":

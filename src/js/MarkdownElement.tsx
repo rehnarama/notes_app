@@ -44,7 +44,6 @@ class MarkdownElement extends React.PureComponent<Props> {
   }
 
   handleOnBlur = () => {
-    console.log("here", this.props.index);
     this.props.requestEditingState(this.props.index, false);
   };
   handleOnClick = () => {
@@ -90,12 +89,10 @@ class MarkdownElement extends React.PureComponent<Props> {
       this.props.editChange === EditChangeReason.Escape &&
       this.mdRef.current
     ) {
-      console.log("focusing md1", this.props.index);
       this.mdRef.current.focus();
     }
 
     if (this.props.focused && !prevProps.focused && this.mdRef.current) {
-      console.log("focusing md2");
       this.mdRef.current.focus();
     }
 
@@ -175,15 +172,17 @@ class MarkdownElement extends React.PureComponent<Props> {
     const renderedContent = md.render(content);
     if (isEditing) {
       return (
-        <AutoTextarea
-          value={content}
-          tabIndex={index + 1}
-          onChange={this.handleOnChange}
-          onBlur={this.handleOnBlur}
-          onKeyUp={this.handleOnKeyUp}
-          onKeyDown={this.handleOnKeyDown}
-          ref={this.textAreaRef}
-        />
+        <div className="isFocused">
+          <AutoTextarea
+            value={content}
+            tabIndex={index + 1}
+            onChange={this.handleOnChange}
+            onBlur={this.handleOnBlur}
+            onKeyUp={this.handleOnKeyUp}
+            onKeyDown={this.handleOnKeyDown}
+            ref={this.textAreaRef}
+          />
+        </div>
       );
     } else {
       return (

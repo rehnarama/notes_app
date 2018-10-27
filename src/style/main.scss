@@ -43,13 +43,13 @@ main#app {
   }
 }
 
-.markdownElement {
+.markdownElement, .isFocused {
   outline: none;
   position: relative;
 }
 
 .markdownElement:focus::before,
-.markdownElement:hover::before {
+.markdownElement:hover::before, .isFocused::before {
   content: "";
   position: absolute;
   top: 0;
@@ -60,7 +60,7 @@ main#app {
 .markdownElement:hover::before {
   background: rgba(100, 100, 100, 1);
 }
-.markdownElement:focus::before {
+.markdownElement:focus::before, .isFocused::before {
   background: rgba(0, 0, 0, 1);
 }
 
