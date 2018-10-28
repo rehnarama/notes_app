@@ -229,13 +229,12 @@ class App extends React.Component<Props, State> {
   };
 
   handleOnKeyPress = (event: KeyboardEvent) => {
-    // Prevent default, otherwise (e.g. when pressing i)
-    // the key will go though the text area popping up
-    event.preventDefault();
-
     if (this.state.editing === null) {
       const curTabIndex = document.activeElement.attributes["tabIndex"];
       const curFocus = curTabIndex ? Number.parseInt(curTabIndex.value) : null;
+
+      // Prevent default, otherwise the key will go though the text area popping up
+      event.preventDefault();
 
       switch (event.key) {
         case "ArrowDown":
@@ -273,6 +272,10 @@ class App extends React.Component<Props, State> {
             // Not all elements have blur, e.g. svg-elements! Hence the try-catch
             (document.activeElement as HTMLElement).blur();
           } catch {}
+          break;
+        case "Enter":
+        case "i":
+          this.handleOnRequestEditingState(curFocus - 1, true);
           break;
         default:
           break;

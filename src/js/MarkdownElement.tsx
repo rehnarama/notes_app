@@ -149,18 +149,6 @@ class MarkdownElement extends React.PureComponent<Props> {
     this.props.onChange(this.props.index, value);
   };
 
-  handleOnMdKeyPress: React.KeyboardEventHandler<HTMLDivElement> = event => {
-    if (this.mdRef.current === null) {
-      return;
-    }
-
-    if (document.activeElement === this.mdRef.current) {
-      if (event.key === "i" || event.key === "Enter") {
-        this.props.requestEditingState(this.props.index, true);
-      }
-    }
-  };
-
   render() {
     const { md, content, isEditing, index } = this.props;
 
@@ -186,7 +174,6 @@ class MarkdownElement extends React.PureComponent<Props> {
           tabIndex={index + 1}
           dangerouslySetInnerHTML={{ __html: renderedContent }}
           onClick={this.handleOnClick}
-          onKeyPress={this.handleOnMdKeyPress}
           ref={this.mdRef}
         />
       );
