@@ -46,7 +46,12 @@ class MarkdownElement extends React.PureComponent<Props> {
   handleOnBlur = () => {
     this.props.requestEditingState(this.props.index, false);
   };
-  handleOnClick = () => {
+  handleOnClick: React.MouseEventHandler<HTMLDivElement> = event => {
+    // We do not want to open if we clicked on link
+    if ((event.target as HTMLElement).tagName === "A") {
+      return;
+    }
+
     this.props.requestEditingState(this.props.index, true);
   };
 
