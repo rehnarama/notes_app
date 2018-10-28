@@ -75,18 +75,8 @@ class MarkdownElement extends React.PureComponent<Props> {
     }
   }
 
-  getSnapshotBeforeUpdate() {
-    if (this.mdRef.current !== null) {
-      return this.mdRef.current.clientHeight;
-    }
-    return null;
-  }
-
-  componentDidUpdate(prevProps: Props, {}, snapshot: number) {
+  componentDidUpdate(prevProps: Props) {
     this.focusTextArea();
-    if (snapshot !== null && this.textAreaRef.current !== null) {
-      this.textAreaRef.current.style.minHeight = snapshot + "px";
-    }
 
     if (
       prevProps.isEditing &&
