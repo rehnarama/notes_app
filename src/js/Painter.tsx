@@ -1,6 +1,6 @@
 import * as React from "react";
 
-const MIN_DISTANCE = 1;
+const MIN_DISTANCE = 3;
 const MIN_REMOVE_DISTANCE = 10;
 const DEFAULT_LINE_WIDTH = 1;
 
@@ -76,6 +76,10 @@ class Painter extends React.PureComponent {
 
   handleOnPointerUp: React.PointerEventHandler = () => {
     this.pointerIsDown = false;
+
+    if (this.lines.length > 0 && this.lines[this.lineIndex].length < 3) {
+      this.requestRenderFrame();
+    }
   };
 
   eraseLine: React.PointerEventHandler = event => {
@@ -85,6 +89,7 @@ class Painter extends React.PureComponent {
     const curY = event.clientY;
     for (let lineIndex = 0; lineIndex < this.lines.length; lineIndex++) {
       const line = this.lines[lineIndex];
+
       for (let pointIndex = 0; pointIndex < line.length; pointIndex++) {
         const point = line[pointIndex];
         const dx = point.x - curX;
@@ -147,6 +152,12 @@ class Painter extends React.PureComponent {
     window.requestAnimationFrame(this.renderFrame);
   };
 
+  static getPointRadius(point: Point) {
+    const pressure = point.pressure;
+    const pointCube = pressure * pressure * pressure;
+    return DEFAULT_LINE_WIDTH + 5 * pointCube;
+  }
+
   renderFrame: FrameRequestCallback = () => {
     if (this.context2d === null) {
       return;
@@ -160,15 +171,44 @@ class Painter extends React.PureComponent {
     );
 
     for (const line of this.lines) {
+      const points: Point[] = new Array(3);
+
+      if (line.length < 3) {
+        const point = line[0];
+        this.context2d.beginPath();
+        this.context2d.arc(
+          point.x,
+          point.y,
+          Painter.getPointRadius(point),
+          0,
+          2 * Math.PI
+        );
+        this.context2d.fill();
+        continue;
+      }
       for (let i = 1; i < line.length; i++) {
+        points[0] = points[1];
+        points[1] = points[2];
+        points[2] = line[i];
+
+        if (!points[0]) {
+          continue;
+        }
+
+        const x0 = (points[0].x + points[1].x) / 2;
+        const y0 = (points[0].y + points[1].y) / 2;
+
+        const x1 = (points[1].x + points[2].x) / 2;
+        const y1 = (points[1].y + points[2].y) / 2;
+
         this.context2d.beginPath();
 
-        const pressure = line[i].pressure;
-        const pressureCube = pressure * pressure * pressure;
-        this.context2d.lineWidth = 1 + 5 * pressureCube;
+        const pointRadius = Painter.getPointRadius(points[1]);
+        this.context2d.lineWidth = pointRadius;
 
-        this.context2d.moveTo(line[i - 1].x, line[i - 1].y);
-        this.context2d.lineTo(line[i].x, line[i].y);
+        this.context2d.moveTo(x0, y0);
+        // Algorithm stolen from https://stackoverflow.com/a/12975891
+        this.context2d.quadraticCurveTo(points[1].x, points[1].y, x1, y1);
 
         this.context2d.stroke();
       }
