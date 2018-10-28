@@ -28,8 +28,7 @@ class AutoTextarea extends React.PureComponent<
     >;
     if (reactRef.current !== null) {
       reactRef.current.style["minHeight"] =
-        // +1 pixel due to chrome bug still showing scroll bar
-        reactRef.current.scrollHeight + 1 + "px";
+        reactRef.current.scrollHeight + "px";
     }
   };
 
