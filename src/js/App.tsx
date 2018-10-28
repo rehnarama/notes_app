@@ -49,49 +49,50 @@ class App extends React.Component<Props, State> {
     const content = window.localStorage.getItem(CONTENT_KEY) || DEFAULT_CONTENT;
     this.state = {
       content,
-      fragments: this.parseFragments(content),
+      fragments: this.parseFragments(content, props.md),
       editing: null,
       focused: null
     };
   }
 
-  parseFragments = (content: string) => {
-    const fragments = content
-      .split(/\n{2,}/g)
-      .map(str => str.trim())
-      .filter(str => str.length > 0);
-    fragments.push(""); // Always empty fragment at bottom
-    return fragments;
+  componentDidUpdate = ({}, prevState: State) => {
+    if (this.state.content !== prevState.content) {
+      // Save new content to localStorage
+      window.localStorage.setItem(CONTENT_KEY, this.state.content);
+    }
+  };
+
+  parseFragments = (content: string, md: MarkdownIt) => {
+    const contentLines = content.split("\n");
+    const env = {};
+
+    // Get all zero level blocks
+    const tokens = md
+      .parse(content, env)
+      // We don't want exiting tokens, i.e. nesting !== -1, then we get dupes
+      // and we require map to exist as a failsafe
+      .filter(token => token.level === 0 && token.nesting !== -1 && token.map);
+
+    const blockFragments = tokens.map(({ map }) =>
+      contentLines.slice(map[0], map[1]).join("\n")
+    );
+    return blockFragments;
+  };
+
+  parseContent = (fragments: string[]) => {
+    return fragments.join("\n\n");
   };
 
   handleOnChange = (index: number, newValue: string) => {
-    this.setState(({ fragments, editing, content }) => {
+    this.setState(({ fragments }) => {
       let newFragments = fragments.map(
         (val, i) => (i == index ? newValue : val)
       );
 
-      if (
-        newValue.length >= 2 &&
-        newValue[newValue.length - 1] === "\n" &&
-        newValue[newValue.length - 2] === "\n"
-      ) {
-        const newContent = this.state.fragments.join("\n\n");
-        newFragments = this.parseFragments(newContent);
-        return {
-          fragments: newFragments,
-          content: newContent,
-          editing: Math.min(editing + 1, newFragments.length - 1),
-          editChangeReason: EditChangeReason.Split,
-          mergedAt: undefined
-        };
-      } else {
-        return {
-          fragments: newFragments,
-          content,
-          editing,
-          mergedAt: undefined
-        };
-      }
+      return {
+        fragments: newFragments,
+        mergedAt: undefined
+      };
     });
   };
 
@@ -129,7 +130,7 @@ class App extends React.Component<Props, State> {
         }
       });
 
-    const newContent = newFragments.join("\n\n");
+    const newContent = this.parseContent(newFragments);
     this.setState(() => ({
       fragments: newFragments,
       content: newContent,
@@ -148,7 +149,7 @@ class App extends React.Component<Props, State> {
     ];
 
     newFragments.splice(index, 1, ...splitFragment);
-    const newContent = newFragments.join("\n\n");
+    const newContent = this.parseContent(newFragments);
     this.setState(({ editing }) => ({
       fragments: newFragments,
       content: newContent,
@@ -165,11 +166,9 @@ class App extends React.Component<Props, State> {
         mergedAt: fragments[index].length
       }));
     } else {
-      const newContent = this.state.fragments.join("\n\n");
+      const newContent = this.parseContent(this.state.fragments);
 
-      window.localStorage.setItem(CONTENT_KEY, newContent);
-
-      const newFragments = this.parseFragments(newContent);
+      const newFragments = this.parseFragments(newContent, this.props.md);
       this.setState(() => ({
         editing: null,
         content: newContent,
@@ -220,7 +219,7 @@ class App extends React.Component<Props, State> {
   ) => {
     const newFragments = Array.from(this.state.fragments);
     newFragments.splice(atIndex, 0, "");
-    const newContent = newFragments.join("\n\n");
+    const newContent = this.parseContent(newFragments);
     this.setState(({ focused, editing }) => ({
       fragments: newFragments,
       content: newContent,
@@ -281,7 +280,13 @@ class App extends React.Component<Props, State> {
 
   render() {
     const { md } = this.props;
-    const { fragments, editing, mergedAt, focused, editChangeReason } = this.state;
+    const {
+      fragments,
+      editing,
+      mergedAt,
+      focused,
+      editChangeReason
+    } = this.state;
 
     return (
       <React.Fragment>
