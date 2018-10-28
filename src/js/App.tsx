@@ -229,6 +229,10 @@ class App extends React.Component<Props, State> {
   };
 
   handleOnKeyPress = (event: KeyboardEvent) => {
+    // Prevent default, otherwise (e.g. when pressing i)
+    // the key will go though the text area popping up
+    event.preventDefault();
+
     if (this.state.editing === null) {
       const curTabIndex = document.activeElement.attributes["tabIndex"];
       const curFocus = curTabIndex ? Number.parseInt(curTabIndex.value) : null;
