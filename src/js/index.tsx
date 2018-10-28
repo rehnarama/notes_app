@@ -20,7 +20,10 @@ function start() {
       }
 
       return ""; // use external default escaping
-    }
+    },
+    html: true,
+    linkify: true,
+    typographer: true
   });
   parser.use(katexMarkdownPlugin);
 
