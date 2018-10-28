@@ -28,31 +28,26 @@ textarea {
   outline: none;
 }
 
-main#app {
-  height: 100vh;
+.markdown-container {
+  min-height: 100vh;
   padding: 20px;
   display: flex;
   align-items: stretch;
   justify-content: flex-start;
   flex-direction: column;
-  > * {
-    width: 100%;
-    margin-left: auto;
-    margin-right: auto;
-    max-width: 700px;
-    &:last-child {
-      flex: 1;
-    }
-  }
+  max-width: 700px;
+  margin: auto;
 }
 
-.markdownElement, .isFocused {
+.markdownElement,
+.isFocused {
   outline: none;
   position: relative;
 }
 
 .markdownElement:focus::before,
-.markdownElement:hover::before, .isFocused::before {
+.markdownElement:hover::before,
+.isFocused::before {
   content: "";
   position: absolute;
   top: 0;
@@ -63,14 +58,16 @@ main#app {
 .markdownElement:hover::before {
   background: rgba(100, 100, 100, 1);
 }
-.markdownElement:focus::before, .isFocused::before {
+.markdownElement:focus::before,
+.isFocused::before {
   background: rgba(0, 0, 0, 1);
 }
 
 table {
   border: 1px solid rgba(0, 0, 0, 0.2);
   border-collapse: collapse;
-  td, th {
+  td,
+  th {
     padding: 8px;
     border: 1px solid rgba(0, 0, 0, 0.2);
   }

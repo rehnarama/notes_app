@@ -1,6 +1,7 @@
 import * as React from "react";
 import { MarkdownIt } from "markdown-it";
 import MarkdownElement, { EditChangeReason } from "./MarkdownElement";
+import Painter from "./Painter";
 
 const DEFAULT_CONTENT = `# Notes
 
@@ -297,23 +298,26 @@ class App extends React.Component<Props, State> {
 
     return (
       <React.Fragment>
-        {fragments.map((fragment, index) => (
-          <MarkdownElement
-            key={index}
-            md={md}
-            content={fragment}
-            onChange={this.handleOnChange}
-            requestEditingState={this.handleOnRequestEditingState}
-            requestMerge={this.handleOnRequestMerge}
-            requestSplit={this.handleOnRequestSplit}
-            requestMove={this.handleOnRequestMove}
-            isEditing={index === editing}
-            index={index}
-            focused={index === focused}
-            mergedAt={mergedAt}
-            editChange={editChangeReason}
-          />
-        ))}
+        <article className="markdown-container">
+          {fragments.map((fragment, index) => (
+            <MarkdownElement
+              key={index}
+              md={md}
+              content={fragment}
+              onChange={this.handleOnChange}
+              requestEditingState={this.handleOnRequestEditingState}
+              requestMerge={this.handleOnRequestMerge}
+              requestSplit={this.handleOnRequestSplit}
+              requestMove={this.handleOnRequestMove}
+              isEditing={index === editing}
+              index={index}
+              focused={index === focused}
+              mergedAt={mergedAt}
+              editChange={editChangeReason}
+            />
+          ))}
+        </article>
+        <Painter />
       </React.Fragment>
     );
   }
