@@ -35,26 +35,6 @@ class AutoTextarea extends React.PureComponent<
 
   render() {
     const { forwardedRef: ref, ...props } = this.props;
-    // const { value } = props;
-
-    // const reactRef = ref as React.RefObject<HTMLTextAreaElement>;
-    // let minHeight = 0;
-    // if (reactRef.current !== null) {
-    //   minHeight = reactRef.current.scrollHeight;
-    // }
-
-    // console.log(ref);
-    // let rows = 0;
-    // if (typeof value === "string") {
-    //   rows = value.split("\n").length;
-    // } else if (typeof value === "number") {
-    //   rows = 1;
-    // } else {
-    //   rows = value.reduce<number>(
-    //     (accum, currValue) => accum + currValue.split("\n").length,
-    //     0
-    //   );
-    // }
 
     return <textarea ref={ref} {...props} />;
   }
