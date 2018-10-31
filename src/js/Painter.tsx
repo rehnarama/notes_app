@@ -3,7 +3,7 @@ import * as React from "react";
 const MIN_DISTANCE = 3;
 const MIN_REMOVE_DISTANCE = 10;
 const DEFAULT_LINE_WIDTH = 1;
-// Default pressure is treated as 
+// Default pressure is treated as
 // pressure not supported, as per spec: https://www.w3.org/TR/pointerevents/
 const DEFAULT_PRESSURE = 0.5;
 
@@ -19,7 +19,13 @@ class Point {
 }
 type Line = Point[];
 
-class Painter extends React.PureComponent {
+interface Props {
+  visible: boolean;
+  onRequestVisibility: (visibility: boolean) => void;
+  onSaveImage: (imgDataUrl: string) => void;
+}
+
+class Painter extends React.PureComponent<Props> {
   canvasRef = React.createRef<HTMLCanvasElement>();
   context2d: CanvasRenderingContext2D | null = null;
 
@@ -39,16 +45,38 @@ class Painter extends React.PureComponent {
     }
     this.resizeCanvas();
     window.addEventListener("resize", this.resizeCanvas);
+    window.addEventListener("pointerover", this.handleOnPointerOver);
+    window.addEventListener("pointerout", this.handleOnPointerLeave);
   }
 
   componentWillUnmount() {
     window.removeEventListener("resize", this.resizeCanvas);
+    window.removeEventListener("pointerover", this.handleOnPointerOver);
+    window.removeEventListener("pointerout", this.handleOnPointerLeave);
+  }
+
+  handleOnPointerOver: EventListener = (event) => {
+    let pointerEvent = event as PointerEvent;
+    if (pointerEvent.pointerType === "pen") {
+      this.props.onRequestVisibility(true);
+    }
+  }
+
+  handleOnPointerLeave: EventListener = (event) => {
+    console.log("levave");
+    let pointerEvent = event as PointerEvent;
+    // Hide if empty
+    if (pointerEvent.pointerType === "pen" && this.lines.length === 0) {
+      this.props.onRequestVisibility(false);
+    }
   }
 
   resizeCanvas = () => {
     if (this.canvasRef.current !== null) {
-      this.canvasRef.current.width = window.innerWidth * window.devicePixelRatio;
-      this.canvasRef.current.height = window.innerHeight * window.devicePixelRatio;
+      this.canvasRef.current.width =
+        window.innerWidth * window.devicePixelRatio;
+      this.canvasRef.current.height =
+        window.innerHeight * window.devicePixelRatio;
       this.requestRenderFrame();
     }
   };
@@ -79,7 +107,11 @@ class Painter extends React.PureComponent {
       return;
     }
 
-    const point = new Point(event.clientX * window.devicePixelRatio, event.clientY * window.devicePixelRatio, event.pressure);
+    const point = new Point(
+      event.clientX * window.devicePixelRatio,
+      event.clientY * window.devicePixelRatio,
+      event.pressure
+    );
     this.lines.push([point]);
     this.lineIndex++;
   };
@@ -227,17 +259,81 @@ class Painter extends React.PureComponent {
     this.isDirty = false;
   };
 
+  clear = () => {
+    this.lines = [];
+    this.lineIndex = -1;
+    this.requestRenderFrame();
+  };
+
+  handleOnClearClick: React.MouseEventHandler<HTMLButtonElement> = () => {
+    this.clear();
+  };
+
+  handleOnSaveClick: React.MouseEventHandler<HTMLButtonElement> = () => {
+    if (this.canvasRef.current === null) {
+      this.props.onRequestVisibility(false);
+      return;
+    }
+
+    const dataUrl = this.canvasRef.current.toDataURL();
+    this.props.onSaveImage(dataUrl);
+    this.clear();
+  };
+
+  handleOnCloseClick: React.MouseEventHandler<HTMLButtonElement> = () => {
+    this.clear();
+    this.props.onRequestVisibility(false);
+  };
+
   render() {
+    const { visible } = this.props;
     return (
-      <canvas
-        ref={this.canvasRef}
-        width={500}
-        height={500}
-        style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", touchAction: "none" }}
-        onPointerMove={this.handleOnPointerMove}
-        onPointerDown={this.handleOnPointerDown}
-        onPointerUp={this.handleOnPointerUp}
-      />
+      <div
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          display: visible ? "initial" : "none"
+        }}
+      >
+        <canvas
+          ref={this.canvasRef}
+          width={500}
+          height={500}
+          style={{
+            position: "absolute",
+            left: 0,
+            top: 0,
+            width: "100%",
+            height: "100%",
+            touchAction: "none",
+            background: "rgba(255, 255, 255, 0.7)"
+          }}
+          onPointerMove={this.handleOnPointerMove}
+          onPointerDown={this.handleOnPointerDown}
+          onPointerUp={this.handleOnPointerUp}
+        />
+        <button
+          style={{ position: "absolute", left: 0 }}
+          onClick={this.handleOnCloseClick}
+        >
+          Close
+        </button>
+        <button
+          style={{ position: "absolute", left: 100 }}
+          onClick={this.handleOnClearClick}
+        >
+          Clear
+        </button>
+        <button
+          style={{ position: "absolute", right: 0 }}
+          onClick={this.handleOnSaveClick}
+        >
+          Save
+        </button>
+      </div>
     );
   }
 }

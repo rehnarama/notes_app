@@ -35,6 +35,7 @@ interface State {
   mergedAt?: number;
   focused: number | null;
   editChangeReason?: EditChangeReason;
+  painterVisibility: boolean;
 }
 
 function clamp(num: number, lowerBound: number, upperBound: number) {
@@ -52,7 +53,8 @@ class App extends React.Component<Props, State> {
       content,
       fragments: this.parseFragments(content, props.md),
       editing: null,
-      focused: null
+      focused: null,
+      painterVisibility: false
     };
   }
 
@@ -291,6 +293,31 @@ class App extends React.Component<Props, State> {
     }
   };
 
+  handleOnPainterSave = (dataUrl: string) => {
+    const { editing, fragments } = this.state;
+
+    const imageString = `![Painter Image](${dataUrl})`;
+    const newFragments = Array.from(fragments);
+    if (editing !== null) {
+      newFragments[editing] += imageString;
+    } else {
+      newFragments.push(imageString);
+    }
+
+    const newContent = this.parseContent(newFragments);
+    this.setState(() => ({
+      content: newContent,
+      fragments: newFragments,
+      painterVisibility: false
+    }));
+  };
+
+  handleOnPainterVisibility = (visibility: boolean) => {
+    this.setState(() => ({
+      painterVisibility: visibility
+    }));
+  };
+
   render() {
     const { md } = this.props;
     const {
@@ -298,7 +325,8 @@ class App extends React.Component<Props, State> {
       editing,
       mergedAt,
       focused,
-      editChangeReason
+      editChangeReason,
+      painterVisibility
     } = this.state;
 
     return (
@@ -322,7 +350,11 @@ class App extends React.Component<Props, State> {
             />
           ))}
         </article>
-        <Painter />
+        <Painter
+          visible={painterVisibility}
+          onSaveImage={this.handleOnPainterSave}
+          onRequestVisibility={this.handleOnPainterVisibility}
+        />
       </React.Fragment>
     );
   }
