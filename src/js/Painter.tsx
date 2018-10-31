@@ -18,7 +18,7 @@ type Line = Point[];
 
 class Painter extends React.PureComponent {
   canvasRef = React.createRef<HTMLCanvasElement>();
-  context2d: CanvasRenderingContext2D = null;
+  context2d: CanvasRenderingContext2D | null = null;
 
   lines: Line[] = [];
   lineIndex = -1;
@@ -30,7 +30,9 @@ class Painter extends React.PureComponent {
   componentDidMount() {
     if (this.canvasRef.current !== null) {
       this.context2d = this.canvasRef.current.getContext("2d");
-      this.context2d.strokeStyle = "black";
+      if (this.context2d) {
+        this.context2d.strokeStyle = "black";
+      }
     }
     this.resizeCanvas();
     window.addEventListener("resize", this.resizeCanvas);
