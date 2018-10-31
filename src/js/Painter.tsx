@@ -55,21 +55,21 @@ class Painter extends React.PureComponent<Props> {
     window.removeEventListener("pointerout", this.handleOnPointerLeave);
   }
 
-  handleOnPointerOver: EventListener = (event) => {
+  handleOnPointerOver: EventListener = event => {
     let pointerEvent = event as PointerEvent;
     if (pointerEvent.pointerType === "pen") {
       this.props.onRequestVisibility(true);
     }
-  }
+  };
 
-  handleOnPointerLeave: EventListener = (event) => {
+  handleOnPointerLeave: EventListener = event => {
     console.log("levave");
     let pointerEvent = event as PointerEvent;
     // Hide if empty
     if (pointerEvent.pointerType === "pen" && this.lines.length === 0) {
       this.props.onRequestVisibility(false);
     }
-  }
+  };
 
   resizeCanvas = () => {
     if (this.canvasRef.current !== null) {
@@ -140,7 +140,10 @@ class Painter extends React.PureComponent<Props> {
         const distSq = dx * dx + dy * dy;
 
         // Found a line close enough to remove
-        if (distSq < MIN_REMOVE_DISTANCE * MIN_REMOVE_DISTANCE * window.devicePixelRatio) {
+        if (
+          distSq <
+          MIN_REMOVE_DISTANCE * MIN_REMOVE_DISTANCE * window.devicePixelRatio
+        ) {
           this.lines.splice(lineIndex, 1);
           dirty = true;
           this.lineIndex--;
@@ -175,7 +178,10 @@ class Painter extends React.PureComponent<Props> {
     const dy = oldPoint.y - curY;
 
     // We subsample for better quality and memory efficiency
-    if (dx * dx + dy * dy < MIN_DISTANCE * MIN_DISTANCE * window.devicePixelRatio) {
+    if (
+      dx * dx + dy * dy <
+      MIN_DISTANCE * MIN_DISTANCE * window.devicePixelRatio
+    ) {
       return;
     }
 
