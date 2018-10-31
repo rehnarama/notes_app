@@ -140,7 +140,7 @@ class Painter extends React.PureComponent<Props> {
         const distSq = dx * dx + dy * dy;
 
         // Found a line close enough to remove
-        if (distSq < MIN_REMOVE_DISTANCE * MIN_REMOVE_DISTANCE) {
+        if (distSq < MIN_REMOVE_DISTANCE * MIN_REMOVE_DISTANCE * window.devicePixelRatio) {
           this.lines.splice(lineIndex, 1);
           dirty = true;
           this.lineIndex--;
@@ -175,7 +175,7 @@ class Painter extends React.PureComponent<Props> {
     const dy = oldPoint.y - curY;
 
     // We subsample for better quality and memory efficiency
-    if (dx * dx + dy * dy < MIN_DISTANCE * MIN_DISTANCE) {
+    if (dx * dx + dy * dy < MIN_DISTANCE * MIN_DISTANCE * window.devicePixelRatio) {
       return;
     }
 
