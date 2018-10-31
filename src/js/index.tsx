@@ -9,6 +9,7 @@ import katexMarkdownPlugin from "./katex-markdown-it";
 import App from "./App";
 
 import "../style/main.scss";
+import mermaidMarkdownIt from "./mermaid-markdown-it";
 
 function start() {
   const parser = md({
@@ -26,6 +27,7 @@ function start() {
     typographer: true
   });
   parser.use(katexMarkdownPlugin);
+  parser.use(mermaidMarkdownIt);
 
   const appElement = document.getElementById("app");
   render(<App md={parser} />, appElement);

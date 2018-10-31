@@ -74,9 +74,14 @@ class App extends React.Component<Props, State> {
       // and we require map to exist as a failsafe
       .filter(token => token.level === 0 && token.nesting !== -1 && token.map);
 
-    const blockFragments = tokens.map(({ map }) =>
-      contentLines.slice(map[0], map[1]).join("\n")
-    );
+    const blockFragments = tokens.map(({ map, type }) => {
+      if (type === "uml_diagram") {
+        // Due to off by one error in
+        // markdownit-plantuml plugin we need to add 1 in this case
+        return contentLines.slice(map[0], map[1] + 1).join("\n");
+      }
+      return contentLines.slice(map[0], map[1]).join("\n");
+    });
     return blockFragments;
   };
 

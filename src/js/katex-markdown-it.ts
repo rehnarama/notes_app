@@ -1,10 +1,10 @@
 import katex from "katex";
 import "katex/dist/katex.min.css";
-import { MarkdownIt, Rule, StateInline } from "markdown-it";
+import { Rule, StateInline, TokenRender } from "markdown-it";
+import { MarkdownItPlugin } from "./markdown-it";
 
-type MarkdownItPlugin = (md: MarkdownIt, ...params: any[]) => void;
 
-function renderer(tokens, idx) {
+const renderer: TokenRender = (tokens, idx) => {
   const latex = tokens[idx].content;
   try {
     const math = katex.renderToString(latex);
