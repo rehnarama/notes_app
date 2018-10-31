@@ -47,8 +47,8 @@ class Painter extends React.PureComponent {
 
   resizeCanvas = () => {
     if (this.canvasRef.current !== null) {
-      this.canvasRef.current.width = window.innerWidth;
-      this.canvasRef.current.height = window.innerHeight;
+      this.canvasRef.current.width = window.innerWidth * window.devicePixelRatio;
+      this.canvasRef.current.height = window.innerHeight * window.devicePixelRatio;
       this.requestRenderFrame();
     }
   };
@@ -67,6 +67,11 @@ class Painter extends React.PureComponent {
   };
 
   handleOnPointerDown: React.PointerEventHandler = event => {
+    // Only allow pen input
+    if (event.pointerType !== "pen") {
+      return;
+    }
+
     this.pointerIsDown = true;
 
     // This means that we are erasing
@@ -74,7 +79,7 @@ class Painter extends React.PureComponent {
       return;
     }
 
-    const point = new Point(event.clientX, event.clientY, event.pressure);
+    const point = new Point(event.clientX * window.devicePixelRatio, event.clientY * window.devicePixelRatio, event.pressure);
     this.lines.push([point]);
     this.lineIndex++;
   };
@@ -90,8 +95,8 @@ class Painter extends React.PureComponent {
   eraseLine: React.PointerEventHandler = event => {
     let dirty = false;
 
-    const curX = event.clientX;
-    const curY = event.clientY;
+    const curX = event.clientX * window.devicePixelRatio;
+    const curY = event.clientY * window.devicePixelRatio;
     for (let lineIndex = 0; lineIndex < this.lines.length; lineIndex++) {
       const line = this.lines[lineIndex];
 
@@ -132,8 +137,8 @@ class Painter extends React.PureComponent {
 
     const currentLine = this.lines[this.lineIndex];
     const oldPoint = currentLine[currentLine.length - 1];
-    const curX = event.clientX;
-    const curY = event.clientY;
+    const curX = event.clientX * window.devicePixelRatio;
+    const curY = event.clientY * window.devicePixelRatio;
     const dx = oldPoint.x - curX;
     const dy = oldPoint.y - curY;
 
@@ -184,7 +189,7 @@ class Painter extends React.PureComponent {
         this.context2d.arc(
           point.x,
           point.y,
-          Painter.getPointRadius(point),
+          Painter.getPointRadius(point) * window.devicePixelRatio,
           0,
           2 * Math.PI
         );
@@ -209,7 +214,7 @@ class Painter extends React.PureComponent {
         this.context2d.beginPath();
 
         const pointRadius = Painter.getPointRadius(points[1]);
-        this.context2d.lineWidth = pointRadius;
+        this.context2d.lineWidth = pointRadius * window.devicePixelRatio;
 
         this.context2d.moveTo(x0, y0);
         // Algorithm stolen from https://stackoverflow.com/a/12975891
@@ -228,7 +233,7 @@ class Painter extends React.PureComponent {
         ref={this.canvasRef}
         width={500}
         height={500}
-        style={{ position: "fixed", top: 0, left: 0, touchAction: "none" }}
+        style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", touchAction: "none" }}
         onPointerMove={this.handleOnPointerMove}
         onPointerDown={this.handleOnPointerDown}
         onPointerUp={this.handleOnPointerUp}
