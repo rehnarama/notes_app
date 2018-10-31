@@ -3,6 +3,9 @@ import * as React from "react";
 const MIN_DISTANCE = 3;
 const MIN_REMOVE_DISTANCE = 10;
 const DEFAULT_LINE_WIDTH = 1;
+// Default pressure is treated as 
+// pressure not supported, as per spec: https://www.w3.org/TR/pointerevents/
+const DEFAULT_PRESSURE = 0.5;
 
 class Point {
   x: number;
@@ -11,7 +14,7 @@ class Point {
   constructor(x: number, y: number, pressure?: number) {
     this.x = x;
     this.y = y;
-    this.pressure = pressure || 0.5;
+    this.pressure = pressure || DEFAULT_PRESSURE;
   }
 }
 type Line = Point[];

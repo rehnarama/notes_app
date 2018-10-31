@@ -10,6 +10,9 @@ const createMermaidRule = (fenceRenderer: TokenRender) => {
 
     if (token.info === "mermaid") {
       const mermaidMarkup = token.content;
+      // Created a quick and dirty random id, 
+      // this will be cleaned up right after anyways 
+      // so we don't have to worry about collisions too much
       let id = "mermaid" + Math.round(Math.random() * 10000000);
       try {
         return mermaidAPI.render(id, mermaidMarkup, noop);
