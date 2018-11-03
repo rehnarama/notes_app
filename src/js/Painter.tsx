@@ -262,14 +262,15 @@ class Painter extends React.PureComponent<Props, State> {
         this.context2d.arc(
           point.x,
           point.y,
-          Painter.getPointRadius(point) * window.devicePixelRatio,
+          (Painter.getPointRadius(point) * window.devicePixelRatio) / 2,
           0,
           2 * Math.PI
         );
         this.context2d.fill();
         continue;
       }
-      for (let i = 1; i < line.length; i++) {
+
+      for (let i = 0; i < line.length; i++) {
         points[0] = points[1];
         points[1] = points[2];
         points[2] = line[i];
