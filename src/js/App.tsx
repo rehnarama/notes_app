@@ -1,7 +1,7 @@
 import * as React from "react";
 import { MarkdownIt } from "markdown-it";
 import MarkdownElement, { EditChangeReason } from "./MarkdownElement";
-import Painter from "./Painter";
+import Painter, { Line } from "./Painter";
 
 const DEFAULT_CONTENT = `# Notes
 
@@ -24,6 +24,7 @@ int main(int argc, char *argv[]) {
 | col 2 is      | centered      |   $12 |
 | zebra stripes | are neat      |    $1 |`;
 const CONTENT_KEY = "content";
+const LINES_KEY = "lines";
 
 interface Props {
   md: MarkdownIt;
@@ -44,6 +45,7 @@ function clamp(num: number, lowerBound: number, upperBound: number) {
 
 class App extends React.Component<Props, State> {
   lastKey: string = "";
+  savedLines: Line[] = JSON.parse(localStorage.getItem(LINES_KEY) || "[]");;
 
   constructor(props: Props) {
     super(props);
@@ -293,23 +295,8 @@ class App extends React.Component<Props, State> {
     }
   };
 
-  handleOnPainterSave = (dataUrl: string) => {
-    const { editing, fragments } = this.state;
-
-    const imageString = `![Painter Image](${dataUrl})`;
-    const newFragments = Array.from(fragments);
-    if (editing !== null) {
-      newFragments[editing] += imageString;
-    } else {
-      newFragments.push(imageString);
-    }
-
-    const newContent = this.parseContent(newFragments);
-    this.setState(() => ({
-      content: newContent,
-      fragments: newFragments,
-      painterVisibility: false
-    }));
+  handleOnPainterSave = (lines: Line[]) => {
+    localStorage.setItem(LINES_KEY, JSON.stringify(lines));
   };
 
   handleOnPainterVisibility = (visibility: boolean) => {
@@ -352,6 +339,7 @@ class App extends React.Component<Props, State> {
         </article>
         <Painter
           visible={painterVisibility}
+          initialLineData={this.savedLines}
           onSaveImage={this.handleOnPainterSave}
           onRequestVisibility={this.handleOnPainterVisibility}
         />

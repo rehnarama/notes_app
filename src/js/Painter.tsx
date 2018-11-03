@@ -18,11 +18,13 @@ class Point {
   }
 }
 type Line = Point[];
+export { Point, Line };
 
 interface Props {
   visible: boolean;
   onRequestVisibility: (visibility: boolean) => void;
-  onSaveImage: (imgDataUrl: string) => void;
+  onSaveImage: (lines: Line[]) => void;
+  initialLineData?: Line[];
 }
 
 class Painter extends React.PureComponent<Props> {
@@ -35,6 +37,15 @@ class Painter extends React.PureComponent<Props> {
   erase = false;
 
   isDirty = false;
+
+  constructor(props: Props) {
+    super(props);
+
+    if (props.initialLineData) {
+      this.lines = props.initialLineData;
+      this.lineIndex = this.lines.length - 1;
+    }
+  }
 
   componentDidMount() {
     if (this.canvasRef.current !== null) {
@@ -63,7 +74,6 @@ class Painter extends React.PureComponent<Props> {
   };
 
   handleOnPointerLeave: EventListener = event => {
-    console.log("levave");
     let pointerEvent = event as PointerEvent;
     // Hide if empty
     if (pointerEvent.pointerType === "pen" && this.lines.length === 0) {
@@ -122,6 +132,8 @@ class Painter extends React.PureComponent<Props> {
     if (this.lines.length > 0 && this.lines[this.lineIndex].length < 3) {
       this.requestRenderFrame();
     }
+
+    this.saveImage();
   };
 
   eraseLine: React.PointerEventHandler = event => {
@@ -275,20 +287,8 @@ class Painter extends React.PureComponent<Props> {
     this.clear();
   };
 
-  handleOnSaveClick: React.MouseEventHandler<HTMLButtonElement> = () => {
-    if (this.canvasRef.current === null) {
-      this.props.onRequestVisibility(false);
-      return;
-    }
-
-    const dataUrl = this.canvasRef.current.toDataURL();
-    this.props.onSaveImage(dataUrl);
-    this.clear();
-  };
-
-  handleOnCloseClick: React.MouseEventHandler<HTMLButtonElement> = () => {
-    this.clear();
-    this.props.onRequestVisibility(false);
+  saveImage = () => {
+    this.props.onSaveImage(this.lines);
   };
 
   render() {
@@ -300,8 +300,7 @@ class Painter extends React.PureComponent<Props> {
           top: 0,
           left: 0,
           right: 0,
-          bottom: 0,
-          display: visible ? "initial" : "none"
+          bottom: 0
         }}
       >
         <canvas
@@ -323,21 +322,9 @@ class Painter extends React.PureComponent<Props> {
         />
         <button
           style={{ position: "absolute", left: 0 }}
-          onClick={this.handleOnCloseClick}
-        >
-          Close
-        </button>
-        <button
-          style={{ position: "absolute", left: 100 }}
           onClick={this.handleOnClearClick}
         >
           Clear
-        </button>
-        <button
-          style={{ position: "absolute", right: 0 }}
-          onClick={this.handleOnSaveClick}
-        >
-          Save
         </button>
       </div>
     );
