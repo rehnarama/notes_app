@@ -206,10 +206,10 @@ class App extends React.Component<Props, State> {
   };
 
   componentDidMount() {
-    document.addEventListener("keypress", this.handleOnKeyPress);
+    document.addEventListener("keydown", this.handleOnKeyPress);
   }
   componentWillUnmount() {
-    document.removeEventListener("keypress", this.handleOnKeyPress);
+    document.removeEventListener("keydown", this.handleOnKeyPress);
   }
 
   focusNext = (delta: number) => {
@@ -241,9 +241,7 @@ class App extends React.Component<Props, State> {
     if (this.state.editing === null) {
       const curFocus = this.getFocusedIndex();
 
-      // Prevent default, otherwise the key will go though the text area popping up
-      event.preventDefault();
-
+      console.log(event.key);
       switch (event.key) {
         case "ArrowDown":
         case "j":
@@ -266,11 +264,15 @@ class App extends React.Component<Props, State> {
           }
           break;
         case "o":
+          // Prevent default, otherwise the key will go though the text area popping up
+          event.preventDefault();
           if (curFocus !== null) {
             this.insertNewFragment(curFocus, true, true);
           }
           break;
         case "O":
+          // Prevent default, otherwise the key will go though the text area popping up
+          event.preventDefault();
           if (curFocus !== null) {
             this.insertNewFragment(curFocus - 1, true, true);
           }
@@ -283,6 +285,8 @@ class App extends React.Component<Props, State> {
           break;
         case "Enter":
         case "i":
+          // Prevent default, otherwise the key will go though the text area popping up
+          event.preventDefault();
           this.handleOnRequestEditingState(curFocus - 1, true);
           break;
         default:
