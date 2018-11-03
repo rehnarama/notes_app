@@ -27,7 +27,7 @@ class AutoTextarea extends React.PureComponent<
       HTMLTextAreaElement
     >;
     if (reactRef.current !== null) {
-      reactRef.current.style["minHeight"] =
+      reactRef.current.style["height"] =
         reactRef.current.scrollHeight + "px";
     }
   };

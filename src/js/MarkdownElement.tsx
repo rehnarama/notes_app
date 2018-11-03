@@ -75,7 +75,7 @@ class MarkdownElement extends React.PureComponent<Props> {
     }
   }
 
-  componentDidUpdate(prevProps: Props) {
+  componentDidUpdate(prevProps: Props, {}, snapshot: number | null) {
     this.focusTextArea();
 
     if (
@@ -89,6 +89,10 @@ class MarkdownElement extends React.PureComponent<Props> {
 
     if (this.props.focused && !prevProps.focused && this.mdRef.current) {
       this.mdRef.current.focus();
+    }
+
+    if (snapshot !== null && this.textAreaRef.current !== null) {
+      this.textAreaRef.current.style.minHeight = snapshot + "px";
     }
 
     this.setCursorPosition();
@@ -126,6 +130,13 @@ class MarkdownElement extends React.PureComponent<Props> {
       this.props.requestSplit(this.props.index, selectionStart);
     }
   };
+
+  getSnapshotBeforeUpdate() {
+    if (this.mdRef.current) {
+      return this.mdRef.current.scrollHeight;
+    }
+    return null;
+  }
 
   handleOnKeyDown: React.KeyboardEventHandler<HTMLTextAreaElement> = event => {
     const selectionStart = this.textAreaRef.current.selectionStart;
