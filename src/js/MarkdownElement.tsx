@@ -164,6 +164,10 @@ class MarkdownElement extends React.PureComponent<Props> {
   }
 
   handleOnKeyDown: React.KeyboardEventHandler<HTMLTextAreaElement> = event => {
+    if (this.textAreaRef.current === null) {
+      return;
+    }
+
     const selectionStart = this.textAreaRef.current.selectionStart;
     const selectionEnd = this.textAreaRef.current.selectionEnd;
 
