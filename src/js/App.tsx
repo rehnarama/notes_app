@@ -243,7 +243,6 @@ class App extends React.Component<Props, State> {
     if (this.state.editing === null) {
       const curFocus = this.getFocusedIndex();
 
-      console.log(event.key);
       switch (event.key) {
         case "ArrowDown":
         case "j":
