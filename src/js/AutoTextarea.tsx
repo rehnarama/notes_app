@@ -12,7 +12,7 @@ type TextAreaPropsWithoutRef = Pick<
 type Props = TextAreaPropsWithoutRef;
 
 class AutoTextarea extends React.PureComponent<
-  Props & { forwardedRef: React.Ref<HTMLTextAreaElement> }
+  Props & { forwardedRef: React.Ref<HTMLTextAreaElement> | undefined }
 > {
   componentDidMount() {
     this.autofitTextArea();
