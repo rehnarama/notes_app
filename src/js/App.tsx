@@ -45,7 +45,7 @@ function clamp(num: number, lowerBound: number, upperBound: number) {
 
 class App extends React.Component<Props, State> {
   lastKey: string = "";
-  savedLines: Line[] = JSON.parse(localStorage.getItem(LINES_KEY) || "[]");;
+  savedLines: Line[] = JSON.parse(localStorage.getItem(LINES_KEY) || "[]");
 
   constructor(props: Props) {
     super(props);
@@ -160,10 +160,10 @@ class App extends React.Component<Props, State> {
 
     newFragments.splice(index, 1, ...splitFragment);
     const newContent = this.parseContent(newFragments);
-    this.setState(({ editing }) => ({
+    this.setState(() => ({
       fragments: newFragments,
       content: newContent,
-      editing: editing + 1,
+      editing: index + 1,
       mergedAt: undefined,
       editChangeReason: EditChangeReason.Split
     }));
@@ -190,9 +190,9 @@ class App extends React.Component<Props, State> {
   };
 
   handleOnRequestMove = (index: number, direction: number) => {
-    this.setState(({ editing, fragments }) => {
+    this.setState(({ fragments }) => {
       const newEditing = clamp(
-        editing + Math.sign(direction),
+        index + Math.sign(direction),
         0,
         fragments.length - 1
       );
@@ -213,8 +213,7 @@ class App extends React.Component<Props, State> {
   }
 
   focusNext = (delta: number) => {
-    const curTabIndex = document.activeElement.attributes["tabIndex"];
-    const curFocus = curTabIndex ? Number.parseInt(curTabIndex.value) : null;
+    const curFocus = this.getFocusedIndex();
 
     this.setState(() => ({
       // -1 since tabIndex is 1-based instead of 0-based as index are
@@ -240,8 +239,7 @@ class App extends React.Component<Props, State> {
 
   handleOnKeyPress = (event: KeyboardEvent) => {
     if (this.state.editing === null) {
-      const curTabIndex = document.activeElement.attributes["tabIndex"];
-      const curFocus = curTabIndex ? Number.parseInt(curTabIndex.value) : null;
+      const curFocus = this.getFocusedIndex();
 
       // Prevent default, otherwise the key will go though the text area popping up
       event.preventDefault();
@@ -304,6 +302,19 @@ class App extends React.Component<Props, State> {
       painterVisibility: visibility
     }));
   };
+
+  private getFocusedIndex() {
+    const activeElement = document.activeElement;
+    const tabIndexAttribute =
+      activeElement !== null
+        ? activeElement.attributes.getNamedItem("tabIndex")
+        : null;
+    const curTabIndex =
+      tabIndexAttribute !== null ? tabIndexAttribute.value : "-1";
+    const curFocus = Number.parseInt(curTabIndex);
+
+    return curFocus;
+  }
 
   render() {
     const { md } = this.props;
