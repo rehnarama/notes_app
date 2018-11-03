@@ -2,6 +2,9 @@ import * as React from "react";
 import { MarkdownIt } from "markdown-it";
 import AutoTextarea from "./AutoTextarea";
 
+const MARKDOWN_CLASSNAME = "markdownElement";
+export { MARKDOWN_CLASSNAME };
+
 enum EditChangeReason {
   Move,
   Escape,
@@ -43,14 +46,32 @@ class MarkdownElement extends React.PureComponent<Props> {
     };
   }
 
-  handleOnBlur = () => {
+  handleOnOutsideClick = (event: MouseEvent) => {
+    if (
+      new RegExp(MARKDOWN_CLASSNAME).test(
+        (event.target as HTMLElement).className
+      )
+    ) {
+      // We don't want to interfere with other MarkdownElements
+      return;
+    }
+
     this.props.requestEditingState(this.props.index, false);
+  };
+  handleOnTextAreaClick: React.MouseEventHandler<
+    HTMLTextAreaElement
+  > = event => {
+    // Stop propagation, so that we can detect when we have clicked outside this element
+    event.stopPropagation();
   };
   handleOnClick: React.MouseEventHandler<HTMLDivElement> = event => {
     // We do not want to open if we clicked on link
     if ((event.target as HTMLElement).tagName === "A") {
       return;
     }
+
+    // Stop propagation, so that we can detect when we have clicked outside this element
+    event.stopPropagation();
 
     this.props.requestEditingState(this.props.index, true);
   };
@@ -101,6 +122,10 @@ class MarkdownElement extends React.PureComponent<Props> {
   componentDidMount() {
     this.focusTextArea();
     this.setCursorPosition();
+    window.addEventListener("click", this.handleOnOutsideClick);
+  }
+  componentWillUnmount() {
+    window.removeEventListener("click", this.handleOnOutsideClick);
   }
 
   handleOnKeyUp: React.KeyboardEventHandler<HTMLTextAreaElement> = event => {
@@ -171,9 +196,9 @@ class MarkdownElement extends React.PureComponent<Props> {
             value={content}
             tabIndex={index + 1}
             onChange={this.handleOnChange}
-            onBlur={this.handleOnBlur}
             onKeyUp={this.handleOnKeyUp}
             onKeyDown={this.handleOnKeyDown}
+            onClick={this.handleOnTextAreaClick}
             ref={this.textAreaRef}
           />
         </div>
@@ -181,7 +206,7 @@ class MarkdownElement extends React.PureComponent<Props> {
     } else {
       return (
         <div
-          className="markdownElement"
+          className={MARKDOWN_CLASSNAME}
           tabIndex={index + 1}
           dangerouslySetInnerHTML={{ __html: renderedContent }}
           onClick={this.handleOnClick}
