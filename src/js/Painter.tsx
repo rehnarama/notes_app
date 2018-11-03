@@ -300,7 +300,8 @@ class Painter extends React.PureComponent<Props> {
           top: 0,
           left: 0,
           right: 0,
-          bottom: 0
+          bottom: 0,
+          pointerEvents: visible ? undefined : "none"
         }}
       >
         <canvas
@@ -314,7 +315,6 @@ class Painter extends React.PureComponent<Props> {
             width: "100%",
             height: "100%",
             touchAction: "none",
-            background: "rgba(255, 255, 255, 0.7)"
           }}
           onPointerMove={this.handleOnPointerMove}
           onPointerDown={this.handleOnPointerDown}
