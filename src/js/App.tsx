@@ -217,7 +217,9 @@ class App extends React.Component<Props, State> {
 
     this.setState(() => ({
       // -1 since tabIndex is 1-based instead of 0-based as index are
-      focused: curFocus ? curFocus + delta - 1 : 0
+      focused: curFocus
+        ? clamp(curFocus + delta - 1, 0, this.state.fragments.length)
+        : 0
     }));
   };
 
