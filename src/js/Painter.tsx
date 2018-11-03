@@ -27,7 +27,11 @@ interface Props {
   initialLineData?: Line[];
 }
 
-class Painter extends React.PureComponent<Props> {
+interface State {
+  clearVisible: boolean;
+}
+
+class Painter extends React.PureComponent<Props, State> {
   canvasRef = React.createRef<HTMLCanvasElement>();
   context2d: CanvasRenderingContext2D | null = null;
 
@@ -45,6 +49,10 @@ class Painter extends React.PureComponent<Props> {
       this.lines = props.initialLineData;
       this.lineIndex = this.lines.length - 1;
     }
+
+    this.state = {
+      clearVisible: this.lines.length > 0
+    };
   }
 
   componentDidMount() {
@@ -124,6 +132,17 @@ class Painter extends React.PureComponent<Props> {
     );
     this.lines.push([point]);
     this.lineIndex++;
+
+    this.updateClearVisible();
+  };
+
+  updateClearVisible = () => {
+    // We check this in callback function instead of taking an argument because
+    // setState is asynchronous, and amount of lines might have changed
+    // in-between calling this and actually running
+    this.setState(() => ({
+      clearVisible: this.lines.length > 0
+    }));
   };
 
   handleOnPointerUp: React.PointerEventHandler = () => {
@@ -163,6 +182,10 @@ class Painter extends React.PureComponent<Props> {
           break;
         }
       }
+    }
+
+    if (this.lines.length === 0) {
+      this.updateClearVisible();
     }
 
     if (dirty) {
@@ -280,6 +303,7 @@ class Painter extends React.PureComponent<Props> {
   clear = () => {
     this.lines = [];
     this.lineIndex = -1;
+    this.updateClearVisible();
     this.requestRenderFrame();
   };
 
@@ -314,14 +338,18 @@ class Painter extends React.PureComponent<Props> {
             top: 0,
             width: "100%",
             height: "100%",
-            touchAction: "none",
+            touchAction: "none"
           }}
           onPointerMove={this.handleOnPointerMove}
           onPointerDown={this.handleOnPointerDown}
           onPointerUp={this.handleOnPointerUp}
         />
         <button
-          style={{ position: "absolute", left: 0 }}
+          style={{
+            position: "absolute",
+            left: 0,
+            display: this.lines.length > 0 ? "block" : "none"
+          }}
           onClick={this.handleOnClearClick}
         >
           Clear
