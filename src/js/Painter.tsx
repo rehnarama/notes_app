@@ -238,9 +238,21 @@ class Painter extends React.PureComponent<Props, State> {
   static getPointRadius(point: Point) {
     const pressure = point.pressure;
     const pointCube = pressure * pressure * pressure;
-    return DEFAULT_LINE_WIDTH + 5 * pointCube;
+    return (DEFAULT_LINE_WIDTH + 5 * pointCube) * window.devicePixelRatio;
   }
 
+  calculateQuadraticPoints(points: Line) {
+    const start = {
+      x: (points[0].x + points[1].x) / 2,
+      y: (points[0].y + points[1].y) / 2
+    };
+    const end = {
+      x: (points[1].x + points[2].x) / 2,
+      y: (points[1].y + points[2].y) / 2
+    };
+    const control = points[1];
+    return { start, end, control };
+  }
   renderFrame: FrameRequestCallback = () => {
     if (this.context2d === null) {
       return;
@@ -254,48 +266,131 @@ class Painter extends React.PureComponent<Props, State> {
     );
 
     for (const line of this.lines) {
-      const points: Point[] = new Array(3);
+      let oldPoint = null;
 
-      if (line.length < 3) {
-        const point = line[0];
-        this.context2d.beginPath();
-        this.context2d.arc(
-          point.x,
-          point.y,
-          (Painter.getPointRadius(point) * window.devicePixelRatio) / 2,
-          0,
-          2 * Math.PI
-        );
-        this.context2d.fill();
-        continue;
-      }
+      // Quadratic curves require three points to draw,
+      // we store the old points in the triangles ABC and BCD in these arrays
+      const prevABCPoints = Array(3);
+      const prevBCDPoints = Array(3);
 
-      for (let i = 0; i < line.length; i++) {
-        points[0] = points[1];
-        points[1] = points[2];
-        points[2] = line[i];
+      // Since quadratic curves requires 3 points to render,
+      // we fake the last segment by simply using the last point twice
+      // this gives a straight line
+      const extendedPoints = Array.from(line);
+      extendedPoints.push(line[line.length - 1]);
 
-        if (!points[0]) {
-          continue;
+      for (const point of extendedPoints) {
+        if (oldPoint === null) {
+          this.context2d.beginPath();
+          this.context2d.arc(
+            point.x,
+            point.y,
+            Painter.getPointRadius(point),
+            0,
+            Math.PI * 2
+          );
+          this.context2d.fill();
+        } else {
+          // Get the deltas, required for angle calculation
+          const dx = point.x - oldPoint.x;
+          const dy = point.y - oldPoint.y;
+
+          // Get the angle between the points
+          const angle = Math.atan2(dy, dx);
+          // Get the perpendicular angle between the points,
+          // required to know where to shift the points in the triangles ABC and BCD
+          const perp = angle + Math.PI / 2;
+
+          const perpX = Math.cos(perp);
+          const perpY = Math.sin(perp);
+          const oldPerpMagn = Painter.getPointRadius(oldPoint);
+          const newPerpMagn = Painter.getPointRadius(point);
+
+          const oldC = prevABCPoints[2];
+          const oldD = prevBCDPoints[2];
+
+          const A = oldC
+            ? oldC
+            : {
+                x: oldPoint.x + perpX * oldPerpMagn,
+                y: oldPoint.y + perpY * oldPerpMagn
+              };
+
+          const B = oldD
+            ? oldD
+            : {
+                x: oldPoint.x - perpX * oldPerpMagn,
+                y: oldPoint.y - perpY * oldPerpMagn
+              };
+
+          const C = {
+            x: point.x + perpX * newPerpMagn,
+            y: point.y + perpY * newPerpMagn
+          };
+
+          const D = {
+            x: point.x - perpX * newPerpMagn,
+            y: point.y - perpY * newPerpMagn
+          };
+
+          prevABCPoints[0] = prevABCPoints[1];
+          prevABCPoints[1] = A;
+          prevABCPoints[2] = C;
+
+          prevBCDPoints[0] = prevBCDPoints[1];
+          prevBCDPoints[1] = B;
+          prevBCDPoints[2] = D;
+
+          if (!prevABCPoints[0] || !prevBCDPoints[0]) {
+            // Since quadratic cruves require three points to draw,
+            // we fake the first segment by using the first points twice
+            // this gives a straight line
+            prevABCPoints[0] = A;
+            prevBCDPoints[0] = B;
+          }
+
+          const upperQuadPoints = this.calculateQuadraticPoints(prevABCPoints);
+          const bottomQuadPoints = this.calculateQuadraticPoints(prevBCDPoints);
+
+          this.context2d.beginPath();
+          this.context2d.moveTo(
+            upperQuadPoints.start.x,
+            upperQuadPoints.start.y
+          );
+
+          this.context2d.quadraticCurveTo(
+            upperQuadPoints.control.x,
+            upperQuadPoints.control.y,
+            upperQuadPoints.end.x,
+            upperQuadPoints.end.y
+          );
+          this.context2d.lineTo(bottomQuadPoints.end.x, bottomQuadPoints.end.y);
+          this.context2d.quadraticCurveTo(
+            bottomQuadPoints.control.x,
+            bottomQuadPoints.control.y,
+            bottomQuadPoints.start.x,
+            bottomQuadPoints.start.y
+          );
+          this.context2d.lineTo(
+            upperQuadPoints.start.x,
+            upperQuadPoints.start.y
+          );
+
+          this.context2d.fill();
         }
-
-        const x0 = (points[0].x + points[1].x) / 2;
-        const y0 = (points[0].y + points[1].y) / 2;
-
-        const x1 = (points[1].x + points[2].x) / 2;
-        const y1 = (points[1].y + points[2].y) / 2;
-
-        this.context2d.beginPath();
-
-        const pointRadius = Painter.getPointRadius(points[1]);
-        this.context2d.lineWidth = pointRadius * window.devicePixelRatio;
-
-        this.context2d.moveTo(x0, y0);
-        // Algorithm stolen from https://stackoverflow.com/a/12975891
-        this.context2d.quadraticCurveTo(points[1].x, points[1].y, x1, y1);
-
-        this.context2d.stroke();
+        oldPoint = point;
       }
+
+      const lastPoint = line[line.length - 1];
+      this.context2d.beginPath();
+      this.context2d.arc(
+        lastPoint.x,
+        lastPoint.y,
+        Painter.getPointRadius(lastPoint) * 1,
+        0,
+        Math.PI * 2
+      );
+      this.context2d.fill();
     }
 
     this.isDirty = false;
