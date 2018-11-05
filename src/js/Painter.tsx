@@ -253,6 +253,110 @@ class Painter extends React.PureComponent<Props, State> {
     const control = points[1];
     return { start, end, control };
   }
+
+  drawLine(line: Line) {
+    if (this.context2d === null) {
+      return;
+    }
+
+    let oldPoint = null;
+
+    let meshPoints = new Array(line.length * 2);
+    let oldC = null,
+      oldD = null;
+
+    for (let index = 0; index < line.length; index++) {
+      const point = line[index];
+
+      if (oldPoint === null) {
+        oldPoint = point;
+        continue;
+      }
+
+      const nextPoint = line[index + 1];
+
+      // Get the deltas, required for angle calculation
+      const dx = point.x - oldPoint.x;
+      const dy = point.y - oldPoint.y;
+      let ndx = dx;
+      let ndy = dy;
+
+      if (nextPoint) {
+        ndx = nextPoint.x - point.x;
+        ndy = nextPoint.y - point.y;
+      }
+
+      const meanAngle = Math.atan2((dy + ndy) / 2, (dx + ndx) / 2);
+
+      // Get the perpendicular angle between the points,
+      // required to know where to shift the points in the triangles ABC and BCD
+      let perp = meanAngle + Math.PI / 2;
+
+      let perpX = Math.cos(perp);
+      let perpY = Math.sin(perp);
+
+      let A = oldC
+        ? oldC
+        : {
+            x: oldPoint.x + perpX * Painter.getPointRadius(oldPoint),
+            y: oldPoint.y + perpY * Painter.getPointRadius(oldPoint)
+          };
+
+      let B = oldD
+        ? oldD
+        : {
+            x: oldPoint.x - perpX * Painter.getPointRadius(oldPoint),
+            y: oldPoint.y - perpY * Painter.getPointRadius(oldPoint)
+          };
+
+      let C = {
+        x: point.x + perpX * Painter.getPointRadius(point),
+        y: point.y + perpY * Painter.getPointRadius(point)
+      };
+
+      let D = {
+        x: point.x - perpX * Painter.getPointRadius(point),
+        y: point.y - perpY * Painter.getPointRadius(point)
+      };
+      oldD = D;
+      oldC = C;
+
+      if (index === 1) {
+        meshPoints[0] = A;
+        meshPoints[meshPoints.length - 1] = B;
+      }
+      meshPoints[index] = C;
+      meshPoints[meshPoints.length - 1 - index] = D;
+
+      oldPoint = point;
+    }
+
+    const prevPoints = Array(3);
+    // Insert original point again to "loop back" around
+    meshPoints.push(meshPoints[0]);
+    this.context2d.beginPath();
+    this.context2d.moveTo(meshPoints[0].x, meshPoints[0].y);
+    for (const point of meshPoints) {
+      prevPoints[0] = prevPoints[1];
+      prevPoints[1] = prevPoints[2];
+      prevPoints[2] = point;
+
+      if (!prevPoints[0]) {
+        continue;
+      }
+
+      const quadPoints = this.calculateQuadraticPoints(prevPoints);
+
+      this.context2d.quadraticCurveTo(
+        quadPoints.control.x,
+        quadPoints.control.y,
+        quadPoints.end.x,
+        quadPoints.end.y
+      );
+    }
+    this.context2d.fill();
+  }
+
   renderFrame: FrameRequestCallback = () => {
     if (this.context2d === null) {
       return;
@@ -266,131 +370,20 @@ class Painter extends React.PureComponent<Props, State> {
     );
 
     for (const line of this.lines) {
-      let oldPoint = null;
-
-      // Quadratic curves require three points to draw,
-      // we store the old points in the triangles ABC and BCD in these arrays
-      const prevABCPoints = Array(3);
-      const prevBCDPoints = Array(3);
-
-      // Since quadratic curves requires 3 points to render,
-      // we fake the last segment by simply using the last point twice
-      // this gives a straight line
-      const extendedPoints = Array.from(line);
-      extendedPoints.push(line[line.length - 1]);
-
-      for (const point of extendedPoints) {
-        if (oldPoint === null) {
-          this.context2d.beginPath();
-          this.context2d.arc(
-            point.x,
-            point.y,
-            Painter.getPointRadius(point),
-            0,
-            Math.PI * 2
-          );
-          this.context2d.fill();
-        } else {
-          // Get the deltas, required for angle calculation
-          const dx = point.x - oldPoint.x;
-          const dy = point.y - oldPoint.y;
-
-          // Get the angle between the points
-          const angle = Math.atan2(dy, dx);
-          // Get the perpendicular angle between the points,
-          // required to know where to shift the points in the triangles ABC and BCD
-          const perp = angle + Math.PI / 2;
-
-          const perpX = Math.cos(perp);
-          const perpY = Math.sin(perp);
-          const oldPerpMagn = Painter.getPointRadius(oldPoint);
-          const newPerpMagn = Painter.getPointRadius(point);
-
-          const oldC = prevABCPoints[2];
-          const oldD = prevBCDPoints[2];
-
-          const A = oldC
-            ? oldC
-            : {
-                x: oldPoint.x + perpX * oldPerpMagn,
-                y: oldPoint.y + perpY * oldPerpMagn
-              };
-
-          const B = oldD
-            ? oldD
-            : {
-                x: oldPoint.x - perpX * oldPerpMagn,
-                y: oldPoint.y - perpY * oldPerpMagn
-              };
-
-          const C = {
-            x: point.x + perpX * newPerpMagn,
-            y: point.y + perpY * newPerpMagn
-          };
-
-          const D = {
-            x: point.x - perpX * newPerpMagn,
-            y: point.y - perpY * newPerpMagn
-          };
-
-          prevABCPoints[0] = prevABCPoints[1];
-          prevABCPoints[1] = A;
-          prevABCPoints[2] = C;
-
-          prevBCDPoints[0] = prevBCDPoints[1];
-          prevBCDPoints[1] = B;
-          prevBCDPoints[2] = D;
-
-          if (!prevABCPoints[0] || !prevBCDPoints[0]) {
-            // Since quadratic cruves require three points to draw,
-            // we fake the first segment by using the first points twice
-            // this gives a straight line
-            prevABCPoints[0] = A;
-            prevBCDPoints[0] = B;
-          }
-
-          const upperQuadPoints = this.calculateQuadraticPoints(prevABCPoints);
-          const bottomQuadPoints = this.calculateQuadraticPoints(prevBCDPoints);
-
-          this.context2d.beginPath();
-          this.context2d.moveTo(
-            upperQuadPoints.start.x,
-            upperQuadPoints.start.y
-          );
-
-          this.context2d.quadraticCurveTo(
-            upperQuadPoints.control.x,
-            upperQuadPoints.control.y,
-            upperQuadPoints.end.x,
-            upperQuadPoints.end.y
-          );
-          this.context2d.lineTo(bottomQuadPoints.end.x, bottomQuadPoints.end.y);
-          this.context2d.quadraticCurveTo(
-            bottomQuadPoints.control.x,
-            bottomQuadPoints.control.y,
-            bottomQuadPoints.start.x,
-            bottomQuadPoints.start.y
-          );
-          this.context2d.lineTo(
-            upperQuadPoints.start.x,
-            upperQuadPoints.start.y
-          );
-
-          this.context2d.fill();
-        }
-        oldPoint = point;
+      if (line.length < 3) {
+        this.context2d.beginPath();
+        this.context2d.arc(
+          line[0].x,
+          line[0].y,
+          Painter.getPointRadius(line[0]),
+          0,
+          2 * Math.PI
+        );
+        this.context2d.fill();
+        continue;
       }
 
-      const lastPoint = line[line.length - 1];
-      this.context2d.beginPath();
-      this.context2d.arc(
-        lastPoint.x,
-        lastPoint.y,
-        Painter.getPointRadius(lastPoint) * 1,
-        0,
-        Math.PI * 2
-      );
-      this.context2d.fill();
+      this.drawLine(line);
     }
 
     this.isDirty = false;
