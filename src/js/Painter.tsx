@@ -7,6 +7,21 @@ const DEFAULT_LINE_WIDTH = 1;
 // pressure not supported, as per spec: https://www.w3.org/TR/pointerevents/
 const DEFAULT_PRESSURE = 0.5;
 
+const vsSource = `
+  attribute vec3 position;
+  uniform vec2 resolution; 
+   
+  void main() {
+    vec3 coord_position = -1.0 + 2.0 * vec3(position.xy / resolution.xy, 0);
+    gl_Position = vec4(vec3(1.0, -1.0, 1) * coord_position, 1.0);
+
+  }`;
+const fsSource = `
+
+  void main(void) {
+    gl_FragColor = vec4(abs(sin(gl_FragCoord.x * 0.01)), abs(sin(gl_FragCoord.y * 0.01)), abs(sin(gl_FragCoord.x * gl_FragCoord.y * 0.001)), 1.0);
+  }`;
+
 class Point {
   x: number;
   y: number;
@@ -33,9 +48,14 @@ interface State {
 
 class Painter extends React.PureComponent<Props, State> {
   canvasRef = React.createRef<HTMLCanvasElement>();
-  context2d: CanvasRenderingContext2D | null = null;
+  gl: WebGLRenderingContext | null = null;
+  vertexBuffer: WebGLBuffer | null = null;
+  program: WebGLProgram | null = null;
+  resolutionLocation: WebGLUniformLocation | null = null;
 
   lines: Line[] = [];
+  lineVertices: Float32Array = new Float32Array();
+  currentLine: Line = [];
   lineIndex = -1;
   pointerIsDown = false;
   erase = false;
@@ -47,22 +67,24 @@ class Painter extends React.PureComponent<Props, State> {
 
     if (props.initialLineData) {
       this.lines = props.initialLineData;
-      this.lineIndex = this.lines.length - 1;
+      this.lineVertices = new Float32Array(
+        props.initialLineData.map(line => this.generateVertices(line)).flat()
+      );
+      this.lineIndex = this.lineVertices.length - 1;
     }
 
     this.state = {
-      clearVisible: this.lines.length > 0
+      clearVisible: this.lineVertices.length > 0
     };
   }
 
   componentDidMount() {
-    if (this.canvasRef.current !== null) {
-      this.context2d = this.canvasRef.current.getContext("2d");
-      if (this.context2d) {
-        this.context2d.strokeStyle = "black";
-      }
+    this.initWebGL();
+    if (this.gl) {
+      this.gl.useProgram(this.program);
+      this.resizeCanvas();
     }
-    this.resizeCanvas();
+
     window.addEventListener("resize", this.resizeCanvas);
     window.addEventListener("pointerover", this.handleOnPointerOver);
     window.addEventListener("pointerout", this.handleOnPointerLeave);
@@ -72,6 +94,47 @@ class Painter extends React.PureComponent<Props, State> {
     window.removeEventListener("resize", this.resizeCanvas);
     window.removeEventListener("pointerover", this.handleOnPointerOver);
     window.removeEventListener("pointerout", this.handleOnPointerLeave);
+  }
+
+  createProgram(gl: WebGLRenderingContext) {
+    const program = (this.program = gl.createProgram());
+    if (program === null) {
+      return;
+    }
+
+    const vs = gl.createShader(gl.VERTEX_SHADER);
+    const fs = gl.createShader(gl.FRAGMENT_SHADER);
+    if (vs === null || fs === null) {
+      return;
+    }
+
+    gl.shaderSource(vs, vsSource);
+    gl.shaderSource(fs, fsSource);
+
+    gl.compileShader(vs);
+    gl.compileShader(fs);
+
+    gl.attachShader(program, vs);
+    gl.attachShader(program, fs);
+
+    gl.deleteShader(vs);
+    gl.deleteShader(fs);
+
+    gl.linkProgram(program);
+    this.resolutionLocation = gl.getUniformLocation(program, "resolution");
+  }
+
+  initWebGL() {
+    if (this.canvasRef.current === null) {
+      return;
+    }
+    const gl = (this.gl = this.canvasRef.current.getContext("webgl"));
+    if (gl === null) {
+      return;
+    }
+
+    this.createProgram(gl);
+    this.vertexBuffer = gl.createBuffer();
   }
 
   handleOnPointerOver: EventListener = event => {
@@ -84,17 +147,22 @@ class Painter extends React.PureComponent<Props, State> {
   handleOnPointerLeave: EventListener = event => {
     let pointerEvent = event as PointerEvent;
     // Hide if empty
-    if (pointerEvent.pointerType === "pen" && this.lines.length === 0) {
+    if (pointerEvent.pointerType === "pen" && this.lineVertices.length === 0) {
       this.props.onRequestVisibility(false);
     }
   };
 
   resizeCanvas = () => {
     if (this.canvasRef.current !== null) {
-      this.canvasRef.current.width =
-        window.innerWidth * window.devicePixelRatio;
-      this.canvasRef.current.height =
-        window.innerHeight * window.devicePixelRatio;
+      const width = (this.canvasRef.current.width =
+        window.innerWidth * window.devicePixelRatio);
+      const height = (this.canvasRef.current.height =
+        window.innerHeight * window.devicePixelRatio);
+
+      if (this.gl) {
+        this.gl.viewport(0, 0, width, height);
+        this.gl.uniform2f(this.resolutionLocation, width, height);
+      }
       this.requestRenderFrame();
     }
   };
@@ -125,13 +193,13 @@ class Painter extends React.PureComponent<Props, State> {
       return;
     }
 
+    this.currentLine = [];
     const point = new Point(
       event.clientX * window.devicePixelRatio,
       event.clientY * window.devicePixelRatio,
       event.pressure
     );
-    this.lines.push([point]);
-    this.lineIndex++;
+    this.currentLine.push(point);
 
     this.updateClearVisible();
   };
@@ -141,14 +209,24 @@ class Painter extends React.PureComponent<Props, State> {
     // setState is asynchronous, and amount of lines might have changed
     // in-between calling this and actually running
     this.setState(() => ({
-      clearVisible: this.lines.length > 0
+      clearVisible: this.lineVertices.length > 0
     }));
   };
 
   handleOnPointerUp: React.PointerEventHandler = () => {
     this.pointerIsDown = false;
 
-    if (this.lines.length > 0 && this.lines[this.lineIndex].length < 3) {
+    this.lineIndex++;
+    this.lines.push(this.currentLine);
+    this.lineVertices = new Float32Array(
+      Array.from(this.lineVertices).concat(
+        this.generateVertices(this.currentLine)
+      )
+    );
+
+    this.currentLine = [];
+
+    if (this.lineVertices.length > 0) {
       this.requestRenderFrame();
     }
 
@@ -176,6 +254,9 @@ class Painter extends React.PureComponent<Props, State> {
           MIN_REMOVE_DISTANCE * MIN_REMOVE_DISTANCE * window.devicePixelRatio
         ) {
           this.lines.splice(lineIndex, 1);
+          this.lineVertices = new Float32Array(
+            this.lines.map(line => this.generateVertices(line)).flat()
+          );
           dirty = true;
           this.lineIndex--;
           lineIndex--;
@@ -184,7 +265,7 @@ class Painter extends React.PureComponent<Props, State> {
       }
     }
 
-    if (this.lines.length === 0) {
+    if (this.lineVertices.length === 0) {
       this.updateClearVisible();
     }
 
@@ -194,7 +275,7 @@ class Painter extends React.PureComponent<Props, State> {
   };
 
   handleOnPointerMove: React.PointerEventHandler = event => {
-    if (this.context2d === null) {
+    if (this.gl === null) {
       return;
     }
     if (!this.pointerIsDown) {
@@ -205,8 +286,7 @@ class Painter extends React.PureComponent<Props, State> {
       return;
     }
 
-    const currentLine = this.lines[this.lineIndex];
-    const oldPoint = currentLine[currentLine.length - 1];
+    const oldPoint = this.currentLine[this.currentLine.length - 1];
     const curX = event.clientX * window.devicePixelRatio;
     const curY = event.clientY * window.devicePixelRatio;
     const dx = oldPoint.x - curX;
@@ -221,7 +301,7 @@ class Painter extends React.PureComponent<Props, State> {
     }
 
     const point = new Point(curX, curY, event.pressure);
-    this.lines[this.lineIndex].push(point);
+    this.currentLine.push(point);
 
     this.requestRenderFrame();
   };
@@ -254,14 +334,10 @@ class Painter extends React.PureComponent<Props, State> {
     return { start, end, control };
   }
 
-  drawLine(line: Line) {
-    if (this.context2d === null) {
-      return;
-    }
-
+  generateVertices(line: Line) {
     let oldPoint = null;
 
-    let meshPoints = new Array(line.length * 2);
+    let meshPoints: number[] = [];
     let oldC = null,
       oldD = null;
 
@@ -321,76 +397,63 @@ class Painter extends React.PureComponent<Props, State> {
       oldD = D;
       oldC = C;
 
-      if (index === 1) {
-        meshPoints[0] = A;
-        meshPoints[meshPoints.length - 1] = B;
-      }
-      meshPoints[index] = C;
-      meshPoints[meshPoints.length - 1 - index] = D;
+      meshPoints.push(A.x, A.y, B.x, B.y, C.x, C.y);
+      meshPoints.push(B.x, B.y, C.x, C.y, D.x, D.y);
 
       oldPoint = point;
     }
 
-    const prevPoints = Array(3);
-    // Insert original point again to "loop back" around
-    meshPoints.push(meshPoints[0]);
-    this.context2d.beginPath();
-    this.context2d.moveTo(meshPoints[0].x, meshPoints[0].y);
-    for (const point of meshPoints) {
-      prevPoints[0] = prevPoints[1];
-      prevPoints[1] = prevPoints[2];
-      prevPoints[2] = point;
-
-      if (!prevPoints[0]) {
-        continue;
-      }
-
-      const quadPoints = this.calculateQuadraticPoints(prevPoints);
-
-      this.context2d.quadraticCurveTo(
-        quadPoints.control.x,
-        quadPoints.control.y,
-        quadPoints.end.x,
-        quadPoints.end.y
-      );
-    }
-    this.context2d.fill();
+    return meshPoints;
   }
 
   renderFrame: FrameRequestCallback = () => {
-    if (this.context2d === null) {
+    if (
+      this.gl === null ||
+      this.program === null ||
+      this.canvasRef.current === null
+    ) {
       return;
     }
 
-    this.context2d.clearRect(
-      0,
-      0,
-      this.context2d.canvas.width,
-      this.context2d.canvas.height
-    );
+    this.gl.clearColor(0, 0, 0, 0);
+    this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
 
-    for (const line of this.lines) {
-      if (line.length < 3) {
-        this.context2d.beginPath();
-        this.context2d.arc(
-          line[0].x,
-          line[0].y,
-          Painter.getPointRadius(line[0]),
-          0,
-          2 * Math.PI
-        );
-        this.context2d.fill();
-        continue;
-      }
+    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vertexBuffer);
 
-      this.drawLine(line);
+    const vertexPosition: number = undefined;
+    this.gl.vertexAttribPointer(vertexPosition, 2, this.gl.FLOAT, false, 0, 0);
+    this.gl.enableVertexAttribArray(vertexPosition);
+
+    this.drawVertices(this.lineVertices);
+
+    if (this.currentLine.length > 0) {
+      this.drawVertices(
+        new Float32Array(this.generateVertices(this.currentLine))
+      );
     }
+    this.gl.disableVertexAttribArray(vertexPosition);
 
     this.isDirty = false;
   };
 
+  drawVertices(vertices: Float32Array) {
+    if (
+      this.gl === null ||
+      this.program === null ||
+      this.canvasRef.current === null
+    ) {
+      return;
+    }
+    if (!vertices || vertices.length < 3) {
+      return;
+    }
+    this.gl.bufferData(this.gl.ARRAY_BUFFER, vertices, this.gl.STATIC_DRAW);
+
+    this.gl.drawArrays(this.gl.TRIANGLES, 0, vertices.length / 2);
+  }
+
   clear = () => {
-    this.lines = [];
+    this.lineVertices = new Float32Array();
     this.lineIndex = -1;
     this.updateClearVisible();
     this.requestRenderFrame();
@@ -437,7 +500,7 @@ class Painter extends React.PureComponent<Props, State> {
           style={{
             position: "absolute",
             left: 0,
-            display: this.lines.length > 0 ? "block" : "none"
+            display: this.lineVertices.length > 0 ? "block" : "none"
           }}
           onClick={this.handleOnClearClick}
         >
