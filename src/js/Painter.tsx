@@ -1,7 +1,4 @@
 import * as React from "react";
-import math from "mathjs";
-import jsspline from "js-spline";
-window.jsspline = jsspline;
 
 const MIN_DISTANCE = 3;
 const MIN_REMOVE_DISTANCE = 10;
