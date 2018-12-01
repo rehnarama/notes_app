@@ -1,7 +1,7 @@
 import * as React from "react";
 import { MarkdownIt } from "markdown-it";
 import MarkdownElement, { EditChangeReason } from "./MarkdownElement";
-import Painter, { Line } from "./Painter";
+import Painter, { Line, Point } from "./Painter";
 
 const DEFAULT_CONTENT = `# Notes
 
@@ -45,7 +45,11 @@ function clamp(num: number, lowerBound: number, upperBound: number) {
 
 class App extends React.Component<Props, State> {
   lastKey: string = "";
-  savedLines: Line[] = JSON.parse(localStorage.getItem(LINES_KEY) || "[]");
+  savedLines: Line[] = (JSON.parse(
+    localStorage.getItem(LINES_KEY) || "[]"
+  ) as Line[]).map(line =>
+    line.map(p => new Point(p.x, p.y, p.pressure))
+  );
 
   constructor(props: Props) {
     super(props);
@@ -95,8 +99,8 @@ class App extends React.Component<Props, State> {
 
   handleOnChange = (index: number, newValue: string) => {
     this.setState(({ fragments }) => {
-      let newFragments = fragments.map(
-        (val, i) => (i == index ? newValue : val)
+      let newFragments = fragments.map((val, i) =>
+        i == index ? newValue : val
       );
 
       return {

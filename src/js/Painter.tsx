@@ -1,4 +1,7 @@
 import * as React from "react";
+import math from "mathjs";
+import jsspline from "js-spline";
+window.jsspline = jsspline;
 
 const MIN_DISTANCE = 3;
 const MIN_REMOVE_DISTANCE = 10;
@@ -30,6 +33,10 @@ class Point {
     this.x = x;
     this.y = y;
     this.pressure = pressure || DEFAULT_PRESSURE;
+  }
+
+  equals(other: Point) {
+    return this.x === other.x && this.y === other.y;
   }
 }
 type Line = Point[];
@@ -68,7 +75,9 @@ class Painter extends React.PureComponent<Props, State> {
     if (props.initialLineData) {
       this.lines = props.initialLineData;
       this.lineVertices = new Float32Array(
-        props.initialLineData.map(line => this.generateVertices(line)).flat()
+        props.initialLineData
+          .map(line => this.generateVertices(line))
+          .reduce((acc, val) => acc.concat(val), [])
       );
       this.lineIndex = this.lineVertices.length - 1;
     }
@@ -255,7 +264,9 @@ class Painter extends React.PureComponent<Props, State> {
         ) {
           this.lines.splice(lineIndex, 1);
           this.lineVertices = new Float32Array(
-            this.lines.map(line => this.generateVertices(line)).flat()
+            this.lines
+              .map(line => this.generateVertices(line))
+              .reduce((acc, val) => acc.concat(val), [])
           );
           dirty = true;
           this.lineIndex--;
@@ -322,27 +333,79 @@ class Painter extends React.PureComponent<Props, State> {
   }
 
   calculateQuadraticPoints(points: Line) {
-    const start = {
-      x: (points[0].x + points[1].x) / 2,
-      y: (points[0].y + points[1].y) / 2
-    };
-    const end = {
-      x: (points[1].x + points[2].x) / 2,
-      y: (points[1].y + points[2].y) / 2
-    };
+    const start = new Point(
+      (points[0].x + points[1].x) / 2,
+      (points[0].y + points[1].y) / 2,
+      (points[0].pressure + points[1].pressure) / 2
+    );
+    const end = new Point(
+      (points[1].x + points[2].x) / 2,
+      (points[1].y + points[2].y) / 2,
+      (points[1].pressure + points[2].pressure) / 2
+    );
     const control = points[1];
     return { start, end, control };
   }
 
+  interpolatePoints(t: number, p1: Point, p2: Point, p3: Point) {
+    const it = 1 - t;
+    const x = it * it * p1.x + 2 * t * it * p2.x + t * t * p3.x;
+    const y = it * it * p1.y + 2 * t * it * p2.y + t * t * p3.y;
+    const pressure =
+      it * it * p1.pressure + 2 * t * it * p2.pressure + t * t * p3.pressure;
+
+    return new Point(x, y, pressure);
+  }
+
+  interpolateLine(line: Line) {
+    const newLine: Line = [];
+
+    // Since every point requries three points,
+    // we have to pad to display first and last point
+    const paddedLine = [line[0], ...line, line[line.length - 1]];
+
+    const points = new Array(3);
+    const N_POINTS = 100;
+
+    for (const point of paddedLine) {
+      points[0] = points[1];
+      points[1] = points[2];
+      points[2] = point;
+
+      if (!points[0]) {
+        continue;
+      }
+
+      const { start, control, end } = this.calculateQuadraticPoints(points);
+
+      for (let t = 0; t <= 1; t += 1 / N_POINTS) {
+        let point = this.interpolatePoints(t, start, control, end);
+        newLine.push(point);
+      }
+    }
+
+    // var curve = new jsspline.Bezier({
+    //   steps: N_POINTS // number of interpolated points between 4 way points
+    // });
+    // for (const point of line) {
+    //   curve.addWayPoint({ x: point.x, y: point.y, z: point.pressure });
+    // }
+    // for (const point of curve.nodes) {
+    //   newLine.push(new Point(point.x, point.y, point.z));
+    // }
+    return newLine;
+  }
+
   generateVertices(line: Line) {
     let oldPoint = null;
+    const interpolatedLine: Line = this.interpolateLine(line);
 
     let meshPoints: number[] = [];
     let oldC = null,
       oldD = null;
 
-    for (let index = 0; index < line.length; index++) {
-      const point = line[index];
+    for (let index = 0; index < interpolatedLine.length; index++) {
+      const point = interpolatedLine[index];
 
       if (oldPoint === null) {
         oldPoint = point;
@@ -424,10 +487,10 @@ class Painter extends React.PureComponent<Props, State> {
     this.gl.vertexAttribPointer(vertexPosition, 2, this.gl.FLOAT, false, 0, 0);
     this.gl.enableVertexAttribArray(vertexPosition);
 
-    this.drawVertices(this.lineVertices);
+    this.drawTriangles(this.lineVertices);
 
     if (this.currentLine.length > 0) {
-      this.drawVertices(
+      this.drawTriangles(
         new Float32Array(this.generateVertices(this.currentLine))
       );
     }
@@ -436,7 +499,7 @@ class Painter extends React.PureComponent<Props, State> {
     this.isDirty = false;
   };
 
-  drawVertices(vertices: Float32Array) {
+  drawTriangles(vertices: Float32Array) {
     if (
       this.gl === null ||
       this.program === null ||
@@ -454,7 +517,9 @@ class Painter extends React.PureComponent<Props, State> {
 
   clear = () => {
     this.lineVertices = new Float32Array();
+    this.lines = [];
     this.lineIndex = -1;
+    this.saveImage();
     this.updateClearVisible();
     this.requestRenderFrame();
   };
