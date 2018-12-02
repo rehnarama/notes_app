@@ -362,7 +362,7 @@ class Painter extends React.PureComponent<Props, State> {
     const paddedLine = [line[0], ...line, line[line.length - 1]];
 
     const points = new Array(3);
-    const N_POINTS = 100;
+    const POINT_PER_PIXEL = 0.2;
 
     for (const point of paddedLine) {
       points[0] = points[1];
@@ -375,7 +375,12 @@ class Painter extends React.PureComponent<Props, State> {
 
       const { start, control, end } = this.calculateQuadraticPoints(points);
 
-      for (let t = 0; t <= 1; t += 1 / N_POINTS) {
+      const dx = (start.x - control.x) + (control.x - end.x);
+      const dy = (start.y - control.y) + (control.y - end.y);
+
+      const nPoints = Math.sqrt(dx * dx + dy * dy) * POINT_PER_PIXEL;
+
+      for (let t = 0; t <= 1; t += 1 / nPoints) {
         let point = this.interpolatePoints(t, start, control, end);
         newLine.push(point);
       }
