@@ -3,6 +3,7 @@ import * as React from "react";
 const MIN_DISTANCE = 3;
 const MIN_REMOVE_DISTANCE = 10;
 const DEFAULT_LINE_WIDTH = 1;
+const POINT_PER_PIXEL = 0.2;
 // Default pressure is treated as
 // pressure not supported, as per spec: https://www.w3.org/TR/pointerevents/
 const DEFAULT_PRESSURE = 0.5;
@@ -359,10 +360,10 @@ class Painter extends React.PureComponent<Props, State> {
 
     // Since every point requries three points,
     // we have to pad to display first and last point
-    const paddedLine = [line[0], ...line, line[line.length - 1]];
+    const n = line.length;
+    const paddedLine = [line[0], ...line, line[n - 1]];
 
     const points = new Array(3);
-    const POINT_PER_PIXEL = 0.2;
 
     for (const point of paddedLine) {
       points[0] = points[1];
@@ -375,8 +376,8 @@ class Painter extends React.PureComponent<Props, State> {
 
       const { start, control, end } = this.calculateQuadraticPoints(points);
 
-      const dx = (start.x - control.x) + (control.x - end.x);
-      const dy = (start.y - control.y) + (control.y - end.y);
+      const dx = start.x - control.x + (control.x - end.x);
+      const dy = start.y - control.y + (control.y - end.y);
 
       const nPoints = Math.sqrt(dx * dx + dy * dy) * POINT_PER_PIXEL;
 
@@ -414,7 +415,7 @@ class Painter extends React.PureComponent<Props, State> {
         continue;
       }
 
-      const nextPoint = line[index + 1];
+      const nextPoint = interpolatedLine[index + 1];
 
       // Get the deltas, required for angle calculation
       const dx = point.x - oldPoint.x;
