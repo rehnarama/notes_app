@@ -74,7 +74,7 @@ class Painter extends React.PureComponent<Props, State> {
       this.lines = props.initialLineData;
       this.lineVertices = new Float32Array(
         props.initialLineData
-          .map(line => this.generateVertices(line))
+          .map(line => this.generateLineVertices(line))
           .reduce((acc, val) => acc.concat(val), [])
       );
       this.lineIndex = this.lineVertices.length - 1;
@@ -227,7 +227,7 @@ class Painter extends React.PureComponent<Props, State> {
     this.lines.push(this.currentLine);
     this.lineVertices = new Float32Array(
       Array.from(this.lineVertices).concat(
-        this.generateVertices(this.currentLine)
+        this.generateLineVertices(this.currentLine)
       )
     );
 
@@ -263,7 +263,7 @@ class Painter extends React.PureComponent<Props, State> {
           this.lines.splice(lineIndex, 1);
           this.lineVertices = new Float32Array(
             this.lines
-              .map(line => this.generateVertices(line))
+              .map(line => this.generateLineVertices(line))
               .reduce((acc, val) => acc.concat(val), [])
           );
           dirty = true;
@@ -399,7 +399,7 @@ class Painter extends React.PureComponent<Props, State> {
     return newLine;
   }
 
-  generateVertices(line: Line) {
+  generateLineVertices(line: Line) {
     let oldPoint = null;
     const interpolatedLine: Line = this.interpolateLine(line);
 
@@ -463,11 +463,20 @@ class Painter extends React.PureComponent<Props, State> {
       oldD = D;
       oldC = C;
 
-      meshPoints.push(A.x, A.y, B.x, B.y, C.x, C.y);
-      meshPoints.push(B.x, B.y, C.x, C.y, D.x, D.y);
+      meshPoints.push(A.x, A.y, B.x, B.y, C.x, C.y, D.x, D.y);
 
       oldPoint = point;
     }
+    const n = meshPoints.length;
+    // We add these vertices so that flat triangles 
+    // are drawn between disjoint objects
+    meshPoints.splice(0, 0, meshPoints[0], meshPoints[1]);
+    meshPoints.push(
+      meshPoints[n - 2],
+      meshPoints[n - 1],
+      meshPoints[n - 2],
+      meshPoints[n - 1]
+    );
 
     return meshPoints;
   }
@@ -494,7 +503,7 @@ class Painter extends React.PureComponent<Props, State> {
 
     if (this.currentLine.length > 0) {
       this.drawTriangles(
-        new Float32Array(this.generateVertices(this.currentLine))
+        new Float32Array(this.generateLineVertices(this.currentLine))
       );
     }
     this.gl.disableVertexAttribArray(vertexPosition);
@@ -515,7 +524,7 @@ class Painter extends React.PureComponent<Props, State> {
     }
     this.gl.bufferData(this.gl.ARRAY_BUFFER, vertices, this.gl.STATIC_DRAW);
 
-    this.gl.drawArrays(this.gl.TRIANGLES, 0, vertices.length / 2);
+    this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, vertices.length / 2);
   }
 
   clear = () => {
