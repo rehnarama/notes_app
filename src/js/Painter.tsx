@@ -7,6 +7,7 @@ const POINT_PER_PIXEL = 0.2;
 // Default pressure is treated as
 // pressure not supported, as per spec: https://www.w3.org/TR/pointerevents/
 const DEFAULT_PRESSURE = 0.5;
+const CIRCLE_VERTICE_PER_PIXEL = 0.3;
 
 const vsSource = `
   attribute vec3 position;
@@ -57,9 +58,11 @@ class Painter extends React.PureComponent<Props, State> {
   vertexBuffer: WebGLBuffer | null = null;
   program: WebGLProgram | null = null;
   resolutionLocation: WebGLUniformLocation | null = null;
+  positionLocation: number  = 0;
 
   lines: Line[] = [];
   lineVertices: Float32Array = new Float32Array();
+  circleVertices: Float32Array = new Float32Array();
   currentLine: Line = [];
   lineIndex = -1;
   pointerIsDown = false;
@@ -129,6 +132,7 @@ class Painter extends React.PureComponent<Props, State> {
 
     gl.linkProgram(program);
     this.resolutionLocation = gl.getUniformLocation(program, "resolution");
+    this.positionLocation = gl.getAttribLocation(program, "position");
   }
 
   initWebGL() {
@@ -399,6 +403,26 @@ class Painter extends React.PureComponent<Props, State> {
     return newLine;
   }
 
+  generateCircleVertices(point: Point) {
+    const vertices = [];
+    vertices.push(point.x, point.y);
+
+    const circumference = point.pressure * Math.PI;
+    const nVertices = CIRCLE_VERTICE_PER_PIXEL * circumference;
+    const dTheta = (2 * Math.PI) / nVertices;
+
+    for (let theta = 0; theta < 2 * Math.PI; theta += dTheta) {
+      const x = point.pressure * Math.cos(theta) + point.x;
+      const y = point.pressure * Math.sin(theta) + point.y;
+      vertices.push(x, y);
+    }
+
+    // Connect to the first vertice to "close" the circle
+    vertices.push(vertices[2], vertices[3]);
+
+    return vertices;
+  }
+
   generateLineVertices(line: Line) {
     let oldPoint = null;
     const interpolatedLine: Line = this.interpolateLine(line);
@@ -468,7 +492,7 @@ class Painter extends React.PureComponent<Props, State> {
       oldPoint = point;
     }
     const n = meshPoints.length;
-    // We add these vertices so that flat triangles 
+    // We add these vertices so that flat triangles
     // are drawn between disjoint objects
     meshPoints.splice(0, 0, meshPoints[0], meshPoints[1]);
     meshPoints.push(
@@ -495,23 +519,28 @@ class Painter extends React.PureComponent<Props, State> {
 
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vertexBuffer);
 
-    const vertexPosition: number = undefined;
-    this.gl.vertexAttribPointer(vertexPosition, 2, this.gl.FLOAT, false, 0, 0);
-    this.gl.enableVertexAttribArray(vertexPosition);
+    this.gl.vertexAttribPointer(this.positionLocation, 2, this.gl.FLOAT, false, 0, 0);
+    this.gl.enableVertexAttribArray(this.positionLocation);
 
-    this.drawTriangles(this.lineVertices);
+    this.drawTriangles(this.lineVertices, this.gl.TRIANGLE_STRIP);
 
     if (this.currentLine.length > 0) {
       this.drawTriangles(
-        new Float32Array(this.generateLineVertices(this.currentLine))
+        new Float32Array(this.generateLineVertices(this.currentLine)),
+        this.gl.TRIANGLE_STRIP
       );
     }
-    this.gl.disableVertexAttribArray(vertexPosition);
+
+    this.drawTriangles(
+      this.circleVertices, this.gl.TRIANGLE_FAN
+    )
+
+    this.gl.disableVertexAttribArray(this.positionLocation);
 
     this.isDirty = false;
   };
 
-  drawTriangles(vertices: Float32Array) {
+  drawTriangles(vertices: Float32Array, drawMode: number) {
     if (
       this.gl === null ||
       this.program === null ||
@@ -524,7 +553,7 @@ class Painter extends React.PureComponent<Props, State> {
     }
     this.gl.bufferData(this.gl.ARRAY_BUFFER, vertices, this.gl.STATIC_DRAW);
 
-    this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, vertices.length / 2);
+    this.gl.drawArrays(drawMode, 0, vertices.length / 2);
   }
 
   clear = () => {
