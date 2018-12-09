@@ -3,11 +3,11 @@ import * as React from "react";
 const MIN_DISTANCE = 3;
 const MIN_REMOVE_DISTANCE = 10;
 const DEFAULT_LINE_WIDTH = 1;
-const POINT_PER_PIXEL = 0.2;
+const POINT_PER_PIXEL = 0.5;
 // Default pressure is treated as
 // pressure not supported, as per spec: https://www.w3.org/TR/pointerevents/
 const DEFAULT_PRESSURE = 0.5;
-const CIRCLE_VERTICE_PER_PIXEL = 0.3;
+const CIRCLE_VERTICE_PER_PIXEL = 0.5;
 
 const vsSource = `
   attribute vec3 position;
@@ -21,7 +21,7 @@ const vsSource = `
 const fsSource = `
 
   void main(void) {
-    gl_FragColor = vec4(abs(sin(gl_FragCoord.x * 0.01)), abs(sin(gl_FragCoord.y * 0.01)), abs(sin(gl_FragCoord.x * gl_FragCoord.y * 0.001)), 1.0);
+    gl_FragColor = vec4(0,0,0,1);//vec4(abs(sin(gl_FragCoord.x * 0.01)), abs(sin(gl_FragCoord.y * 0.01)), abs(sin(gl_FragCoord.x * gl_FragCoord.y * 0.001)), 1.0);
   }`;
 
 class Point {
@@ -56,13 +56,13 @@ class Painter extends React.PureComponent<Props, State> {
   canvasRef = React.createRef<HTMLCanvasElement>();
   gl: WebGLRenderingContext | null = null;
   vertexBuffer: WebGLBuffer | null = null;
+  indexBuffer: WebGLBuffer | null = null;
   program: WebGLProgram | null = null;
   resolutionLocation: WebGLUniformLocation | null = null;
-  positionLocation: number  = 0;
+  positionLocation: number = 0;
 
   lines: Line[] = [];
   lineVertices: Float32Array = new Float32Array();
-  circleVertices: Float32Array = new Float32Array();
   currentLine: Line = [];
   lineIndex = -1;
   pointerIsDown = false;
@@ -139,13 +139,16 @@ class Painter extends React.PureComponent<Props, State> {
     if (this.canvasRef.current === null) {
       return;
     }
-    const gl = (this.gl = this.canvasRef.current.getContext("webgl"));
+    const gl = (this.gl = this.canvasRef.current.getContext(
+      "webgl2"
+    ) as WebGLRenderingContext);
     if (gl === null) {
       return;
     }
 
     this.createProgram(gl);
     this.vertexBuffer = gl.createBuffer();
+    this.indexBuffer = gl.createBuffer();
   }
 
   handleOnPointerOver: EventListener = event => {
@@ -390,35 +393,28 @@ class Painter extends React.PureComponent<Props, State> {
         newLine.push(point);
       }
     }
-
-    // var curve = new jsspline.Bezier({
-    //   steps: N_POINTS // number of interpolated points between 4 way points
-    // });
-    // for (const point of line) {
-    //   curve.addWayPoint({ x: point.x, y: point.y, z: point.pressure });
-    // }
-    // for (const point of curve.nodes) {
-    //   newLine.push(new Point(point.x, point.y, point.z));
-    // }
     return newLine;
   }
 
   generateCircleVertices(point: Point) {
     const vertices = [];
-    vertices.push(point.x, point.y);
 
-    const circumference = point.pressure * Math.PI;
+    const radius = Painter.getPointRadius(point);
+    const circumference = radius * Math.PI;
     const nVertices = CIRCLE_VERTICE_PER_PIXEL * circumference;
     const dTheta = (2 * Math.PI) / nVertices;
 
-    for (let theta = 0; theta < 2 * Math.PI; theta += dTheta) {
-      const x = point.pressure * Math.cos(theta) + point.x;
-      const y = point.pressure * Math.sin(theta) + point.y;
-      vertices.push(x, y);
+    for (let theta = 0; theta < 2 * Math.PI; theta += 2 * dTheta) {
+      const x1 = radius * Math.cos(theta) + point.x;
+      const y1 = radius * Math.sin(theta) + point.y;
+
+      const x2 = radius * Math.cos(theta + dTheta) + point.x;
+      const y2 = radius * Math.sin(theta + dTheta) + point.y;
+      vertices.push(x1, y1, point.x, point.y, x2, y2);
     }
 
     // Connect to the first vertice to "close" the circle
-    vertices.push(vertices[2], vertices[3]);
+    vertices.push(vertices[0], vertices[1]);
 
     return vertices;
   }
@@ -491,15 +487,19 @@ class Painter extends React.PureComponent<Props, State> {
 
       oldPoint = point;
     }
-    const n = meshPoints.length;
+
+    const firstBall = this.generateCircleVertices(line[0]);
+    const lastBall = this.generateCircleVertices(line[line.length - 1]);
+    const n = lastBall.length;
     // We add these vertices so that flat triangles
     // are drawn between disjoint objects
-    meshPoints.splice(0, 0, meshPoints[0], meshPoints[1]);
+    meshPoints.splice(0, 0, firstBall[0], firstBall[1], ...firstBall);
     meshPoints.push(
-      meshPoints[n - 2],
-      meshPoints[n - 1],
-      meshPoints[n - 2],
-      meshPoints[n - 1]
+      ...lastBall,
+      lastBall[n - 2],
+      lastBall[n - 1],
+      lastBall[n - 2],
+      lastBall[n - 1]
     );
 
     return meshPoints;
@@ -519,7 +519,14 @@ class Painter extends React.PureComponent<Props, State> {
 
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vertexBuffer);
 
-    this.gl.vertexAttribPointer(this.positionLocation, 2, this.gl.FLOAT, false, 0, 0);
+    this.gl.vertexAttribPointer(
+      this.positionLocation,
+      2,
+      this.gl.FLOAT,
+      false,
+      0,
+      0
+    );
     this.gl.enableVertexAttribArray(this.positionLocation);
 
     this.drawTriangles(this.lineVertices, this.gl.TRIANGLE_STRIP);
@@ -530,10 +537,6 @@ class Painter extends React.PureComponent<Props, State> {
         this.gl.TRIANGLE_STRIP
       );
     }
-
-    this.drawTriangles(
-      this.circleVertices, this.gl.TRIANGLE_FAN
-    )
 
     this.gl.disableVertexAttribArray(this.positionLocation);
 
