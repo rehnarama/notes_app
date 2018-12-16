@@ -420,6 +420,10 @@ class Painter extends React.PureComponent<Props, State> {
   }
 
   generateLineVertices(line: Line) {
+    if (line.length === 0) {
+      return [];
+    }
+
     let oldPoint = null;
     const interpolatedLine: Line = this.interpolateLine(line);
 
