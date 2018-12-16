@@ -133,6 +133,7 @@ class Painter extends React.PureComponent<Props, State> {
     gl.linkProgram(program);
     this.resolutionLocation = gl.getUniformLocation(program, "resolution");
     this.positionLocation = gl.getAttribLocation(program, "position");
+    gl.clearColor(0, 0, 0, 0);
   }
 
   initWebGL() {
@@ -518,10 +519,9 @@ class Painter extends React.PureComponent<Props, State> {
       return;
     }
 
-    this.gl.clearColor(0, 0, 0, 0);
-    this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
 
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vertexBuffer);
+    this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
 
     this.gl.vertexAttribPointer(
       this.positionLocation,
