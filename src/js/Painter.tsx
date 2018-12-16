@@ -170,9 +170,9 @@ class Painter extends React.PureComponent<Props, State> {
   resizeCanvas = () => {
     if (this.canvasRef.current !== null) {
       const width = (this.canvasRef.current.width =
-        window.innerWidth * window.devicePixelRatio);
+        window.innerWidth * Painter.getScaleFactor());
       const height = (this.canvasRef.current.height =
-        window.innerHeight * window.devicePixelRatio);
+        window.innerHeight * Painter.getScaleFactor());
 
       if (this.gl) {
         this.gl.viewport(0, 0, width, height);
@@ -210,8 +210,8 @@ class Painter extends React.PureComponent<Props, State> {
 
     this.currentLine = [];
     const point = new Point(
-      event.clientX * window.devicePixelRatio,
-      event.clientY * window.devicePixelRatio,
+      event.clientX * Painter.getScaleFactor(),
+      event.clientY * Painter.getScaleFactor(),
       event.pressure
     );
     this.currentLine.push(point);
@@ -251,8 +251,8 @@ class Painter extends React.PureComponent<Props, State> {
   eraseLine: React.PointerEventHandler = event => {
     let dirty = false;
 
-    const curX = event.clientX * window.devicePixelRatio;
-    const curY = event.clientY * window.devicePixelRatio;
+    const curX = event.clientX * Painter.getScaleFactor();
+    const curY = event.clientY * Painter.getScaleFactor();
     for (let lineIndex = 0; lineIndex < this.lines.length; lineIndex++) {
       const line = this.lines[lineIndex];
 
@@ -266,7 +266,7 @@ class Painter extends React.PureComponent<Props, State> {
         // Found a line close enough to remove
         if (
           distSq <
-          MIN_REMOVE_DISTANCE * MIN_REMOVE_DISTANCE * window.devicePixelRatio
+          MIN_REMOVE_DISTANCE * MIN_REMOVE_DISTANCE * Painter.getScaleFactor()
         ) {
           this.lines.splice(lineIndex, 1);
           this.lineVertices = new Float32Array(
@@ -304,15 +304,15 @@ class Painter extends React.PureComponent<Props, State> {
     }
 
     const oldPoint = this.currentLine[this.currentLine.length - 1];
-    const curX = event.clientX * window.devicePixelRatio;
-    const curY = event.clientY * window.devicePixelRatio;
+    const curX = event.clientX * Painter.getScaleFactor();
+    const curY = event.clientY * Painter.getScaleFactor();
     const dx = oldPoint.x - curX;
     const dy = oldPoint.y - curY;
 
     // We subsample for better quality and memory efficiency
     if (
       dx * dx + dy * dy <
-      MIN_DISTANCE * MIN_DISTANCE * window.devicePixelRatio
+      MIN_DISTANCE * MIN_DISTANCE * Painter.getScaleFactor()
     ) {
       return;
     }
@@ -332,10 +332,14 @@ class Painter extends React.PureComponent<Props, State> {
     window.requestAnimationFrame(this.renderFrame);
   };
 
+  static getScaleFactor() {
+    return window.devicePixelRatio;
+  }
+
   static getPointRadius(point: Point) {
     const pressure = point.pressure;
     const pointCube = pressure * pressure * pressure;
-    return (DEFAULT_LINE_WIDTH + 5 * pointCube) * window.devicePixelRatio;
+    return (DEFAULT_LINE_WIDTH + 5 * pointCube) * Painter.getScaleFactor();
   }
 
   calculateQuadraticPoints(points: Line) {
