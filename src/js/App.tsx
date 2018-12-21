@@ -47,9 +47,7 @@ class App extends React.Component<Props, State> {
   lastKey: string = "";
   savedLines: Line[] = (JSON.parse(
     localStorage.getItem(LINES_KEY) || "[]"
-  ) as Line[]).map(line =>
-    line.map(p => new Point(p.x, p.y, p.pressure))
-  );
+  ) as Line[]).map(line => line.map(p => new Point(p.x, p.y, p.pressure)));
 
   constructor(props: Props) {
     super(props);
@@ -338,30 +336,9 @@ class App extends React.Component<Props, State> {
 
     return (
       <React.Fragment>
-        <article className="markdown-container">
-          {fragments.map((fragment, index) => (
-            <MarkdownElement
-              key={index}
-              md={md}
-              content={fragment}
-              onChange={this.handleOnChange}
-              requestEditingState={this.handleOnRequestEditingState}
-              requestMerge={this.handleOnRequestMerge}
-              requestSplit={this.handleOnRequestSplit}
-              requestMove={this.handleOnRequestMove}
-              isEditing={index === editing}
-              index={index}
-              focused={index === focused}
-              mergedAt={mergedAt}
-              editChange={editChangeReason}
-            />
-          ))}
-        </article>
         <Painter
-          visible={painterVisibility}
           initialLineData={this.savedLines}
           onSaveImage={this.handleOnPainterSave}
-          onRequestVisibility={this.handleOnPainterVisibility}
         />
       </React.Fragment>
     );

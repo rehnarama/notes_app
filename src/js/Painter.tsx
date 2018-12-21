@@ -21,7 +21,7 @@ const vsSource = `
 const fsSource = `
 
   void main(void) {
-    gl_FragColor = vec4(0,0,0,1);//vec4(abs(sin(gl_FragCoord.x * 0.01)), abs(sin(gl_FragCoord.y * 0.01)), abs(sin(gl_FragCoord.x * gl_FragCoord.y * 0.001)), 1.0);
+    gl_FragColor = vec4(0,0,0,1);
   }`;
 
 class Point {
@@ -42,8 +42,6 @@ type Line = Point[];
 export { Point, Line };
 
 interface Props {
-  visible: boolean;
-  onRequestVisibility: (visibility: boolean) => void;
   onSaveImage: (lines: Line[]) => void;
   initialLineData?: Line[];
 }
@@ -133,7 +131,6 @@ class Painter extends React.PureComponent<Props, State> {
     gl.linkProgram(program);
     this.resolutionLocation = gl.getUniformLocation(program, "resolution");
     this.positionLocation = gl.getAttribLocation(program, "position");
-    gl.clearColor(0, 0, 0, 0);
   }
 
   initWebGL() {
@@ -141,7 +138,7 @@ class Painter extends React.PureComponent<Props, State> {
       return;
     }
     const gl = (this.gl = this.canvasRef.current.getContext(
-      "webgl2"
+      "webgl"
     ) as WebGLRenderingContext);
     if (gl === null) {
       return;
@@ -154,17 +151,10 @@ class Painter extends React.PureComponent<Props, State> {
 
   handleOnPointerOver: EventListener = event => {
     let pointerEvent = event as PointerEvent;
-    if (pointerEvent.pointerType === "pen") {
-      this.props.onRequestVisibility(true);
-    }
   };
 
   handleOnPointerLeave: EventListener = event => {
     let pointerEvent = event as PointerEvent;
-    // Hide if empty
-    if (pointerEvent.pointerType === "pen" && this.lineVertices.length === 0) {
-      this.props.onRequestVisibility(false);
-    }
   };
 
   resizeCanvas = () => {
@@ -196,11 +186,6 @@ class Painter extends React.PureComponent<Props, State> {
   };
 
   handleOnPointerDown: React.PointerEventHandler = event => {
-    // Only allow pen input
-    if (event.pointerType !== "pen") {
-      return;
-    }
-
     this.pointerIsDown = true;
 
     // This means that we are erasing
@@ -523,7 +508,6 @@ class Painter extends React.PureComponent<Props, State> {
       return;
     }
 
-
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vertexBuffer);
     this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
 
@@ -585,17 +569,8 @@ class Painter extends React.PureComponent<Props, State> {
   };
 
   render() {
-    const { visible } = this.props;
     return (
-      <div
-        style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          pointerEvents: visible ? undefined : "none"
-        }}
+      <React.Fragment
       >
         <canvas
           ref={this.canvasRef}
@@ -623,7 +598,7 @@ class Painter extends React.PureComponent<Props, State> {
         >
           Clear
         </button>
-      </div>
+      </React.Fragment>
     );
   }
 }
