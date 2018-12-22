@@ -1,6 +1,8 @@
 import * as React from "react";
 import LineGenerator from "./LineGenerator";
 import LineRenderer from "./LineRenderer";
+import FeltPen from "./Pen/FeltPen";
+import Pen from "./Pen/Pen";
 
 const MIN_DISTANCE = 3;
 // Default pressure is treated as
@@ -37,7 +39,8 @@ class Painter extends React.PureComponent<Props> {
 
   isDirty = false;
 
-  lineGenerator = new LineGenerator();
+  pen: Pen = new FeltPen();
+  lineGenerator = new LineGenerator(this.pen);
   lineRenderer: LineRenderer | null = null;
   targetRef = React.createRef<HTMLDivElement>();
 
@@ -182,7 +185,7 @@ class Painter extends React.PureComponent<Props> {
     this.lineRenderer.clear();
     this.lineRenderer.draw(this.lineGenerator.generateVertices());
 
-    const generator = new LineGenerator();
+    const generator = new LineGenerator(this.pen);
     generator.addLine(this.currentLine);
     this.lineRenderer.draw(generator.generateVertices());
 
