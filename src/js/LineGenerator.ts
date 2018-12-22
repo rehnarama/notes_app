@@ -1,3 +1,5 @@
+import interpolateLine from "./LineInterpolation";
+
 const DEFAULT_PRESSURE = 0.5;
 const CIRCLE_VERTICE_PER_PIXEL = 0.5;
 const DEFAULT_LINE_WIDTH = 1;
@@ -22,12 +24,20 @@ export { Point, Line };
 
 export default class LineGenerator {
   private lines: Line[] = new Array();
+  private static scaleFactor: number = window.devicePixelRatio;
+
+  private static updateScaleFactor() {
+    // We need to cache this value since querying it too often is slow
+    this.scaleFactor = window.devicePixelRatio;
+  }
 
   public addLine(line: Line) {
-    this.lines.push(line);
+    this.lines.push(interpolateLine(line));
   }
 
   public findLine(point: Point) {
+    LineGenerator.updateScaleFactor();
+
     for (let lineIndex = 0; lineIndex < this.lines.length; lineIndex++) {
       const line = this.lines[lineIndex];
 
@@ -40,7 +50,7 @@ export default class LineGenerator {
         // Found a line close enough
         if (
           distSq <
-          MIN_REMOVE_DISTANCE * MIN_REMOVE_DISTANCE * window.devicePixelRatio
+          MIN_REMOVE_DISTANCE * MIN_REMOVE_DISTANCE * LineGenerator.scaleFactor
         ) {
           console.log(distSq);
           return line;
@@ -58,7 +68,7 @@ export default class LineGenerator {
   private static getPointRadius(point: Point) {
     const pressure = point.pressure;
     const pointCube = pressure * pressure * pressure;
-    return (DEFAULT_LINE_WIDTH + 5 * pointCube) * window.devicePixelRatio;
+    return (DEFAULT_LINE_WIDTH + 5 * pointCube) * LineGenerator.scaleFactor;
   }
 
   private static generateCircleVertices(point: Point) {
@@ -88,6 +98,9 @@ export default class LineGenerator {
     if (line.length === 0) {
       return [];
     }
+
+    LineGenerator.updateScaleFactor();
+    
 
     let oldPoint = null;
 
