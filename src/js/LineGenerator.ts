@@ -4,6 +4,8 @@ const DEFAULT_PRESSURE = 0.5;
 const CIRCLE_VERTICE_PER_PIXEL = 0.5;
 const DEFAULT_LINE_WIDTH = 1;
 const MIN_REMOVE_DISTANCE = 10;
+const MAX_ANGLE = 0.1;
+
 
 class Point {
   x: number;
@@ -128,7 +130,15 @@ export default class LineGenerator {
         ndy = nextPoint.y - point.y;
       }
 
+      const angle = Math.atan2(dy, dx);
       const meanAngle = Math.atan2((dy + ndy) / 2, (dx + ndx) / 2);
+
+      // A cheaty method to get round edges if angle change too quickly
+      if (Math.abs(meanAngle - angle) > MAX_ANGLE) {
+        meshPoints.push(
+          ...this.generateCircleVertices(point)
+        )
+      }
 
       // Get the perpendicular angle between the points,
       // required to know where to shift the points in the triangles ABC and BCD
