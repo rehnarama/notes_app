@@ -58,7 +58,20 @@ class Painter extends React.PureComponent<Props> {
 
     this.lineRenderer = new LineRenderer(this.targetRef.current);
     this.requestRenderFrame();
+
+    window.addEventListener("resize", this.handleOnResize);
   }
+
+  componentWillUnmount() {
+    window.removeEventListener("resize", this.handleOnResize);
+  }
+
+  handleOnResize = () => {
+    if (this.lineRenderer !== null) {
+      this.lineRenderer.updateSize();
+      this.requestRenderFrame();
+    }
+  };
 
   isEraseButtonDown = ({
     button,
@@ -139,7 +152,6 @@ class Painter extends React.PureComponent<Props> {
       dx * dx + dy * dy <
       MIN_DISTANCE * MIN_DISTANCE * Painter.getScaleFactor()
     ) {
-      console.log(dx * dx + dy * dy);
       return;
     }
 

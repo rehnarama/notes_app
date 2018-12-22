@@ -76,7 +76,7 @@ export default class LineRenderer {
     this.positionLocation = gl.getAttribLocation(program, "position");
   }
 
-  private updateSize() {
+  public updateSize() {
     if (this.gl.canvas === null) {
       return;
     }

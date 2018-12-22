@@ -52,7 +52,6 @@ export default class LineGenerator {
           distSq <
           MIN_REMOVE_DISTANCE * MIN_REMOVE_DISTANCE * LineGenerator.scaleFactor
         ) {
-          console.log(distSq);
           return line;
         }
       }
