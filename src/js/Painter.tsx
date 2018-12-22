@@ -26,6 +26,8 @@ class Point {
 type Line = Point[];
 export { Point, Line };
 
+type PointerEventHandler = (event: PointerEvent) => void;
+
 interface Props {
   onSaveImage: (lines: Line[]) => void;
   initialLineData?: Line[];
@@ -62,11 +64,42 @@ class Painter extends React.PureComponent<Props> {
     this.lineRenderer = new LineRenderer(this.targetRef.current);
     this.requestRenderFrame();
 
+    this.targetRef.current.addEventListener(
+      "pointermove",
+      this.handleOnPointerMove,
+      { passive: true }
+    );
+    this.targetRef.current.addEventListener(
+      "pointerdown",
+      this.handleOnPointerDown,
+      { passive: true }
+    );
+    this.targetRef.current.addEventListener(
+      "pointerup",
+      this.handleOnPointerUp,
+      { passive: true }
+    );
+
     window.addEventListener("resize", this.handleOnResize);
   }
 
   componentWillUnmount() {
     window.removeEventListener("resize", this.handleOnResize);
+
+    if (this.targetRef.current !== null) {
+      this.targetRef.current.removeEventListener(
+        "pointermove",
+        this.handleOnPointerMove
+      );
+      this.targetRef.current.removeEventListener(
+        "pointerdown",
+        this.handleOnPointerDown
+      );
+      this.targetRef.current.removeEventListener(
+        "pointerup",
+        this.handleOnPointerUp
+      );
+    }
   }
 
   handleOnResize = () => {
@@ -89,7 +122,7 @@ class Painter extends React.PureComponent<Props> {
     return (button === 5 || button === -1) && buttons === 32;
   };
 
-  handleOnPointerDown: React.PointerEventHandler = event => {
+  handleOnPointerDown: PointerEventHandler = event => {
     this.pointerIsDown = true;
 
     // This means that we are erasing
@@ -106,7 +139,7 @@ class Painter extends React.PureComponent<Props> {
     this.currentLine.push(point);
   };
 
-  handleOnPointerUp: React.PointerEventHandler = () => {
+  handleOnPointerUp: PointerEventHandler = () => {
     this.pointerIsDown = false;
 
     this.lineGenerator.addLine(this.currentLine);
@@ -116,7 +149,7 @@ class Painter extends React.PureComponent<Props> {
     this.requestRenderFrame();
   };
 
-  eraseLine: React.PointerEventHandler = event => {
+  eraseLine: PointerEventHandler = event => {
     let dirty = false;
 
     const point = new Point(
@@ -135,7 +168,7 @@ class Painter extends React.PureComponent<Props> {
     }
   };
 
-  handleOnPointerMove: React.PointerEventHandler = event => {
+  handleOnPointerMove: PointerEventHandler = event => {
     if (!this.pointerIsDown) {
       return;
     }
@@ -209,9 +242,6 @@ class Painter extends React.PureComponent<Props> {
             touchAction: "none",
             overflow: "hidden"
           }}
-          onPointerMove={this.handleOnPointerMove}
-          onPointerDown={this.handleOnPointerDown}
-          onPointerUp={this.handleOnPointerUp}
         />
       </React.Fragment>
     );
