@@ -1,7 +1,7 @@
 import Pen from "./Pen";
 import { Point } from "../LineGenerator";
 
-const MAX_ANGLE = 0.1;
+const MAX_ANGLE = 0.05;
 
 export default class FeltPen extends Pen {
   public generateVertices(line: Point[]): number[] {
@@ -37,12 +37,8 @@ export default class FeltPen extends Pen {
       }
 
       const angle = Math.atan2(dy, dx);
+      const nextAngle = Math.atan2(ndy, ndx);
       const meanAngle = Math.atan2((dy + ndy) / 2, (dx + ndx) / 2);
-
-      // A cheaty method to get round edges if angle change too quickly
-      if (Math.abs(meanAngle - angle) > MAX_ANGLE) {
-        meshPoints.push(...this.generateCircleVertices(point));
-      }
 
       // Get the perpendicular angle between the points,
       // required to know where to shift the points in the triangles ABC and BCD
@@ -78,6 +74,21 @@ export default class FeltPen extends Pen {
       oldC = C;
 
       meshPoints.push(A.x, A.y, B.x, B.y, C.x, C.y, D.x, D.y);
+
+      // Add a rounded line cap
+      const minAngle = Math.min(angle, nextAngle);
+      const maxAngle = Math.max(angle, nextAngle);
+      const sign = Math.sign(angle - nextAngle);
+      for (let theta = minAngle; theta <= maxAngle; theta += MAX_ANGLE) {
+        const perpTheta = theta + Math.PI / 2;
+        const x =
+          point.x + sign * Math.cos(perpTheta) * this.getPointRadius(point);
+        const y =
+          point.y + sign * Math.sin(perpTheta) * this.getPointRadius(point);
+        meshPoints.push(x, y, D.x, D.y);
+      }
+      // Add final point to fix the seam
+      meshPoints.push(C.x, C.y, D.x, D.y);
 
       oldPoint = point;
     }
