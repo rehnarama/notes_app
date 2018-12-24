@@ -102,6 +102,9 @@ export default class LineRenderer {
     if (this.gl === null || this.program === null) {
       return;
     }
+    if (vertices.length == 0) {
+      return;
+    }
 
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vertexBuffer);
 
