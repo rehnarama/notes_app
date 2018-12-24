@@ -38,11 +38,10 @@ export default class FeltPen extends Pen {
 
       const angle = Math.atan2(dy, dx);
       const nextAngle = Math.atan2(ndy, ndx);
-      const meanAngle = Math.atan2((dy + ndy) / 2, (dx + ndx) / 2);
 
       // Get the perpendicular angle between the points,
       // required to know where to shift the points in the triangles ABC and BCD
-      let perp = meanAngle + Math.PI / 2;
+      let perp = angle + Math.PI / 2;
 
       let perpX = Math.cos(perp);
       let perpY = Math.sin(perp);
