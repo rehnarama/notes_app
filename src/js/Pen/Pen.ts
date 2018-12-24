@@ -12,8 +12,8 @@ export default abstract class Pen {
 
   protected getPointRadius(point: Point) {
     const pressure = point.pressure;
-    const pointCube = pressure * pressure * pressure;
-    return (DEFAULT_LINE_WIDTH + 5 * pointCube) * this.scaleFactor;
+    const pointSquare = pressure * pressure;
+    return (DEFAULT_LINE_WIDTH + 5 * pointSquare) * this.scaleFactor;
   }
 
   protected generateCircleVertices(point: Point) {
