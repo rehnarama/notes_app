@@ -10,6 +10,10 @@ export default abstract class Pen {
     this.scaleFactor = window.devicePixelRatio;
   }
 
+  public getScaleFactor() {
+    return this.scaleFactor;
+  }
+
   protected getPointRadius(point: Point) {
     const pressure = point.pressure;
     const pointSquare = pressure * pressure;

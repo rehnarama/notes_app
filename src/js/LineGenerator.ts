@@ -28,6 +28,10 @@ export default class LineGenerator {
   private lines: Line[] = new Array();
   private static scaleFactor: number = window.devicePixelRatio;
 
+  private linesAdded = 0;
+  private isDirty = false;
+  private vertices: number[] = new Array();
+
   constructor(pen: Pen) {
     this.pen = pen;
   }
@@ -39,6 +43,7 @@ export default class LineGenerator {
 
   public addLine(line: Line) {
     this.lines.push(interpolateLine(line));
+    this.linesAdded++;
   }
 
   public findLine(point: Point) {
@@ -68,17 +73,39 @@ export default class LineGenerator {
 
   public removeLine(line: Line) {
     this.lines = this.lines.filter(l => l !== line);
+    this.isDirty = true;
   }
 
-
-  public generateVertices() {
+  public generateVertices(): Float32Array {
     // In case scale factor has changed, e.g. moved to another screen
+    const oldScaleFactor = this.pen.getScaleFactor();
     this.pen.updateScaleFactor();
+    const newScaleFactor = this.pen.getScaleFactor();
 
-    let vertices: number[] = [];
-    for (const line of this.lines) {
-      vertices = vertices.concat(this.pen.generateVertices(line));
+    if (oldScaleFactor !== newScaleFactor) {
+      this.isDirty = true;
     }
-    return new Float32Array(vertices);
+
+    if (this.isDirty) {
+      // If dirty we need to re-calculate everything
+      this.vertices = [];
+      for (const line of this.lines) {
+        this.vertices = this.vertices.concat(this.pen.generateVertices(line));
+      }
+      this.isDirty = false;
+      this.linesAdded = 0;
+    }
+
+    if (this.linesAdded > 0) {
+      // If a line is added we only need to calculate this
+      const start = this.lines.length - this.linesAdded;
+      for (let n = 0; n < this.linesAdded; n++) {
+        const line = this.lines[start + n];
+        this.vertices = this.vertices.concat(this.pen.generateVertices(line));
+      }
+      this.linesAdded = 0;
+    }
+
+    return new Float32Array(this.vertices);
   }
 }
