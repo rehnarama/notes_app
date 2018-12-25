@@ -225,6 +225,23 @@ class Painter extends React.PureComponent<Props> {
     this.isDirty = false;
   };
 
+  getX = () => {
+    return Math.random() * window.innerWidth * 2;
+  };
+  getY = () => {
+    return Math.random() * window.innerHeight * 2;
+  };
+  addRandomLine = () => {
+    const line: Line = [
+      new Point(this.getX(), this.getY(), Math.random()),
+      new Point(this.getX(), this.getY(), Math.random()),
+      new Point(this.getX(), this.getY(), Math.random())
+    ];
+    this.lineGenerator.addLine(line);
+    this.requestRenderFrame();
+    window.requestAnimationFrame(this.addRandomLine);
+  };
+
   clear = () => {
     this.requestRenderFrame();
   };
@@ -243,6 +260,17 @@ class Painter extends React.PureComponent<Props> {
             overflow: "hidden"
           }}
         />
+        <button
+          style={{
+            position: "fixed",
+            left: 0,
+            top: 0,
+            width: 100
+          }}
+          onClick={this.addRandomLine}
+        >
+          Test
+        </button>
       </React.Fragment>
     );
   }
