@@ -1,7 +1,7 @@
 import Pen from "./Pen";
 import { Point } from "../LineGenerator";
 
-const MAX_ANGLE = 0.05;
+const MAX_ANGLE = 0.5;
 
 export default class FeltPen extends Pen {
   public generateVertices(line: Point[]): number[] {
@@ -12,8 +12,6 @@ export default class FeltPen extends Pen {
     let oldPoint = null;
 
     let meshPoints: number[] = [];
-    let oldC = null,
-      oldD = null;
 
     for (let index = 0; index < line.length; index++) {
       const point = line[index];
@@ -46,19 +44,24 @@ export default class FeltPen extends Pen {
       let perpX = Math.cos(perp);
       let perpY = Math.sin(perp);
 
-      let A = oldC
-        ? oldC
-        : {
-            x: oldPoint.x + perpX * this.getPointRadius(oldPoint),
-            y: oldPoint.y + perpY * this.getPointRadius(oldPoint)
-          };
+      const nextA = {
+        x:
+          point.x +
+          Math.cos(nextAngle + Math.PI / 2) * this.getPointRadius(point),
+        y:
+          point.y +
+          Math.sin(nextAngle + Math.PI / 2) * this.getPointRadius(point)
+      };
 
-      let B = oldD
-        ? oldD
-        : {
-            x: oldPoint.x - perpX * this.getPointRadius(oldPoint),
-            y: oldPoint.y - perpY * this.getPointRadius(oldPoint)
-          };
+      let A = {
+        x: oldPoint.x + perpX * this.getPointRadius(oldPoint),
+        y: oldPoint.y + perpY * this.getPointRadius(oldPoint)
+      };
+
+      let B = {
+        x: oldPoint.x - perpX * this.getPointRadius(oldPoint),
+        y: oldPoint.y - perpY * this.getPointRadius(oldPoint)
+      };
 
       let C = {
         x: point.x + perpX * this.getPointRadius(point),
@@ -69,8 +72,6 @@ export default class FeltPen extends Pen {
         x: point.x - perpX * this.getPointRadius(point),
         y: point.y - perpY * this.getPointRadius(point)
       };
-      oldD = D;
-      oldC = C;
 
       meshPoints.push(A.x, A.y, B.x, B.y, C.x, C.y, D.x, D.y);
 
@@ -78,7 +79,7 @@ export default class FeltPen extends Pen {
       const minAngle = Math.min(angle, nextAngle);
       const maxAngle = Math.max(angle, nextAngle);
       const sign = Math.sign(angle - nextAngle);
-      for (let theta = minAngle; theta <= maxAngle; theta += MAX_ANGLE) {
+      for (let theta = minAngle; theta < maxAngle; theta += MAX_ANGLE) {
         const perpTheta = theta + Math.PI / 2;
         const x =
           point.x + sign * Math.cos(perpTheta) * this.getPointRadius(point);
