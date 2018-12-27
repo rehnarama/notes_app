@@ -176,6 +176,15 @@ class Painter extends React.PureComponent<Props> {
       this.eraseLine(event);
       return;
     }
+    const coalescedEvents = typeof event.getCoalescedEvents !== "undefined"
+      ? event.getCoalescedEvents()
+      : [];
+    if (coalescedEvents.length > 0) {
+      for (const e of coalescedEvents) {
+        this.handleOnPointerMove(e);
+      }
+      return;
+    }
 
     const oldPoint = this.currentLine[this.currentLine.length - 1];
     const curX = event.clientX * Painter.getScaleFactor();
