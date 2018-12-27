@@ -235,10 +235,10 @@ class Painter extends React.PureComponent<Props> {
   };
 
   getX = () => {
-    return Math.random() * window.innerWidth * 2;
+    return Math.random() * window.innerWidth * this.pen.getScaleFactor();
   };
   getY = () => {
-    return Math.random() * window.innerHeight * 2;
+    return Math.random() * window.innerHeight * this.pen.getScaleFactor();
   };
   addRandomLine = () => {
     const line: Line = [
