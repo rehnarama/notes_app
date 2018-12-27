@@ -38,7 +38,20 @@ export default class LineRenderer {
     this.createProgram();
     this.gl.useProgram(this.program);
     this.updateSize();
+
     this.vertexBuffer = this.gl.createBuffer();
+    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vertexBuffer);
+
+    // Tell WebGL how to read from vertex buffer
+    this.gl.vertexAttribPointer(
+      this.positionLocation,
+      2,
+      this.gl.FLOAT,
+      false,
+      0,
+      0
+    );
+    this.gl.enableVertexAttribArray(this.positionLocation);
   }
 
   private createProgram() {
@@ -106,21 +119,7 @@ export default class LineRenderer {
       return;
     }
 
-    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vertexBuffer);
-
-    this.gl.vertexAttribPointer(
-      this.positionLocation,
-      2,
-      this.gl.FLOAT,
-      false,
-      0,
-      0
-    );
-    this.gl.enableVertexAttribArray(this.positionLocation);
-
     this.gl.bufferData(this.gl.ARRAY_BUFFER, vertices, this.gl.STATIC_DRAW);
     this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, vertices.length / 2);
-
-    this.gl.disableVertexAttribArray(this.positionLocation);
   }
 }
