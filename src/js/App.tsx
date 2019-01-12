@@ -1,5 +1,6 @@
 import * as React from "react";
 import Painter, { Line, Point } from "./Painter";
+import PenPicker from "./PenPicker";
 
 const LINES_KEY = "lines";
 
@@ -16,6 +17,7 @@ class App extends React.Component {
   render() {
     return (
       <React.Fragment>
+        <PenPicker />
         <Painter
           initialLineData={this.savedLines}
           onSaveImage={this.handleOnPainterSave}
