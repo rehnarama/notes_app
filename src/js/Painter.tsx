@@ -6,7 +6,7 @@ import Pen from "./Pen/Pen";
 import FullMeshNetwork from "./Network/FullMeshNetwork";
 import BB from "./Network/BasicBroadcast";
 
-const fmn = new FullMeshNetwork("ws://rehnarama-notes.glitch.me");
+const fmn = new FullMeshNetwork("wss://rehnarama-notes.glitch.me");
 const bb = new BB(fmn);
 
 fmn.onConnection.add(() => {
