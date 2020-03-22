@@ -17,7 +17,7 @@ class App extends React.Component {
   render() {
     return (
       <React.Fragment>
-        <PenPicker />
+        {/* <PenPicker /> */}
         <Painter
           initialLineData={this.savedLines}
           onSaveImage={this.handleOnPainterSave}

@@ -3,6 +3,15 @@ import LineGenerator from "./LineGenerator";
 import LineRenderer from "./LineRenderer";
 import FeltPen from "./Pen/FeltPen";
 import Pen from "./Pen/Pen";
+import FullMeshNetwork from "./Network/FullMeshNetwork";
+import BB from "./Network/BasicBroadcast";
+
+const fmn = new FullMeshNetwork("ws://rehnarama-notes.glitch.me");
+const bb = new BB(fmn);
+
+fmn.onConnection.add(() => {
+  console.log("yay");
+});
 
 const MIN_DISTANCE = 3;
 // Default pressure is treated as
@@ -34,7 +43,7 @@ interface Props {
 }
 
 class Painter extends React.PureComponent<Props> {
-  currentLine: Line = [];
+  currentLines: Map<number, Line> = new Map();
 
   pointerIsDown = false;
   erase = false;
@@ -48,6 +57,21 @@ class Painter extends React.PureComponent<Props> {
 
   constructor(props: Props) {
     super(props);
+    bb.bDeliver.add(arg => {
+      if (arg.type === "ongoing") {
+        const line = arg.line as Line;
+        const id = arg.id as number;
+        this.currentLines.set(id, line);
+      } else if (arg.type === "done") {
+        const id = arg.id as number;
+        const line = this.currentLines.get(id);
+        this.currentLines.delete(id);
+        if (line) {
+          this.lineGenerator.addLine(line);
+        }
+      }
+      this.requestRenderFrame();
+    });
 
     if (props.initialLineData) {
       for (const line of props.initialLineData) {
@@ -130,21 +154,24 @@ class Painter extends React.PureComponent<Props> {
       return;
     }
 
-    this.currentLine = [];
+    const currentLine = [];
     const point = new Point(
       event.clientX * Painter.getScaleFactor(),
       event.clientY * Painter.getScaleFactor(),
       event.pressure
     );
-    this.currentLine.push(point);
+    currentLine.push(point);
+
+    this.currentLines.set(fmn.localId as number, currentLine);
   };
 
   handleOnPointerUp: PointerEventHandler = () => {
     this.pointerIsDown = false;
 
-    this.lineGenerator.addLine(this.currentLine);
-
-    this.currentLine = [];
+    bb.bBroadcast({
+      type: "done",
+      id: fmn.localId
+    });
 
     this.requestRenderFrame();
   };
@@ -176,9 +203,10 @@ class Painter extends React.PureComponent<Props> {
       this.eraseLine(event);
       return;
     }
-    const coalescedEvents = typeof event.getCoalescedEvents !== "undefined"
-      ? event.getCoalescedEvents()
-      : [];
+    const coalescedEvents =
+      typeof event.getCoalescedEvents !== "undefined"
+        ? event.getCoalescedEvents()
+        : [];
     if (coalescedEvents.length > 0) {
       for (const e of coalescedEvents) {
         this.handleOnPointerMove(e);
@@ -186,7 +214,11 @@ class Painter extends React.PureComponent<Props> {
       return;
     }
 
-    const oldPoint = this.currentLine[this.currentLine.length - 1];
+    const currentLine = this.currentLines.get(fmn.localId as number);
+    if (!currentLine) {
+      return;
+    }
+    const oldPoint = currentLine[currentLine.length - 1];
     const curX = event.clientX * Painter.getScaleFactor();
     const curY = event.clientY * Painter.getScaleFactor();
     const dx = oldPoint.x - curX;
@@ -201,9 +233,13 @@ class Painter extends React.PureComponent<Props> {
     }
 
     const point = new Point(curX, curY, event.pressure);
-    this.currentLine.push(point);
+    currentLine.push(point);
 
-    this.requestRenderFrame();
+    bb.bBroadcast({
+      type: "ongoing",
+      id: fmn.localId,
+      line: currentLine
+    });
   };
 
   requestRenderFrame = () => {
@@ -228,7 +264,9 @@ class Painter extends React.PureComponent<Props> {
     this.lineRenderer.draw(this.lineGenerator.generateVertices());
 
     const generator = new LineGenerator(this.pen);
-    generator.addLine(this.currentLine);
+    for (const line of this.currentLines.values()) {
+      generator.addLine(line);
+    }
     this.lineRenderer.draw(generator.generateVertices());
 
     this.isDirty = false;
@@ -269,17 +307,17 @@ class Painter extends React.PureComponent<Props> {
             overflow: "hidden"
           }}
         />
-        <button
-          style={{
-            position: "fixed",
-            left: 0,
-            top: 0,
-            width: 100
-          }}
-          onClick={this.addRandomLine}
-        >
-          Test
-        </button>
+        {/* <button */}
+        {/*   style={{ */}
+        {/*     position: "fixed", */}
+        {/*     left: 0, */}
+        {/*     top: 0, */}
+        {/*     width: 100 */}
+        {/*   }} */}
+        {/*   onClick={this.addRandomLine} */}
+        {/* > */}
+        {/*   Test */}
+        {/* </button> */}
       </React.Fragment>
     );
   }
