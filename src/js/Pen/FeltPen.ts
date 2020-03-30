@@ -1,12 +1,16 @@
 import Pen from "./Pen";
-import { Point } from "../LineGenerator";
+import { Point, Line } from "../LineGenerator";
+import { Color } from "../LineRenderer";
 
 const MAX_ANGLE = 0.5;
 
 export default class FeltPen extends Pen {
-  public generateVertices(line: Point[]): number[] {
+  public generateVertices(
+    lineData: Line
+  ): { vertices: number[]; colors: number[] } {
+    const line = lineData.points;
     if (line.length === 0) {
-      return [];
+      return { vertices: [], colors: [] };
     }
 
     let oldPoint = null;
@@ -107,9 +111,14 @@ export default class FeltPen extends Pen {
       lastBall[n - 1]
     );
 
-    return meshPoints;
+    const colors = new Array((meshPoints.length / 2) * 4);
+    for (let i = 0; i < colors.length; i++) {
+      colors[i] = this.getColor()[i % 4];
+    }
+
+    return { vertices: meshPoints, colors };
   }
-  public getColor(): string {
-    return "000000";
+  public getColor(): Color {
+    return [1, 0.412, 0.712, 1];
   }
 }

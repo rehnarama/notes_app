@@ -1,6 +1,8 @@
 import interpolateLine from "./LineInterpolation";
 import { clamp } from "./utils";
 import Pen from "./Pen/Pen";
+import { LineId } from "./Lines";
+import { Color } from "./LineRenderer";
 
 const DEFAULT_PRESSURE = 0.5;
 const MIN_REMOVE_DISTANCE = 10;
@@ -14,98 +16,62 @@ class Point {
     this.y = y;
     this.pressure = pressure || DEFAULT_PRESSURE;
   }
-
-  equals(other: Point) {
-    return this.x === other.x && this.y === other.y;
-  }
 }
-type Line = Point[];
+interface Line {
+  points: Point[];
+  color: Color;
+}
 export { Point, Line };
 
 export default class LineGenerator {
   private pen: Pen;
 
-  private lines: Line[] = new Array();
-  private static scaleFactor: number = window.devicePixelRatio;
+  private lineVertices: Map<
+    LineId,
+    { vertices: number[]; colors: number[] }
+  > = new Map();
+  private vertices: number[] = [];
+  private colors: number[] = [];
 
-  private linesAdded = 0;
   private isDirty = false;
-  private vertices: number[] = new Array();
 
   constructor(pen: Pen) {
     this.pen = pen;
   }
 
-  private static updateScaleFactor() {
-    // We need to cache this value since querying it too often is slow
-    this.scaleFactor = window.devicePixelRatio;
-  }
-
-  public addLine(line: Line) {
-    this.lines.push(interpolateLine(line));
-    this.linesAdded++;
-  }
-
-  public findLine(point: Point) {
-    LineGenerator.updateScaleFactor();
-
-    for (let lineIndex = 0; lineIndex < this.lines.length; lineIndex++) {
-      const line = this.lines[lineIndex];
-
-      for (let pointIndex = 0; pointIndex < line.length; pointIndex++) {
-        const dx = line[pointIndex].x - point.x;
-        const dy = line[pointIndex].y - point.y;
-
-        const distSq = dx * dx + dy * dy;
-
-        // Found a line close enough
-        if (
-          distSq <
-          MIN_REMOVE_DISTANCE * MIN_REMOVE_DISTANCE * LineGenerator.scaleFactor
-        ) {
-          return line;
-        }
-      }
+  public addLine(id: LineId, line: Line) {
+    const interpolatedLine = {
+      points: interpolateLine(line.points),
+      color: line.color
     }
+    const vertices = this.pen.generateVertices(interpolatedLine);
+    this.isDirty = this.lineVertices.has(id); // Since we have to clear the old vertices in this case...
+    this.lineVertices.set(id, vertices);
 
-    return null;
+    if (!this.isDirty) {
+      // If we're dirty, then this will be cleared anyway, so might as well not do it at all
+      this.vertices.push(...vertices.vertices);
+      this.colors.push(...vertices.colors);
+    }
   }
 
-  public removeLine(line: Line) {
-    this.lines = this.lines.filter(l => l !== line);
+  public removeLine(id: LineId) {
+    this.lineVertices.delete(id);
     this.isDirty = true;
   }
 
-  public generateVertices(): Float32Array {
-    // In case scale factor has changed, e.g. moved to another screen
-    const oldScaleFactor = this.pen.getScaleFactor();
-    this.pen.updateScaleFactor();
-    const newScaleFactor = this.pen.getScaleFactor();
-
-    if (oldScaleFactor !== newScaleFactor) {
-      this.isDirty = true;
-    }
-
+  public generateData(): { vertices: Float32Array; color: Float32Array } {
     if (this.isDirty) {
-      // If dirty we need to re-calculate everything
-      this.vertices = [];
-      for (const line of this.lines) {
-        this.vertices = this.vertices.concat(this.pen.generateVertices(line));
-      }
-      this.isDirty = false;
-      this.linesAdded = 0;
+      const lineVertices = Array.from(this.lineVertices.values());
+      this.vertices = ([] as number[]).concat(
+        ...lineVertices.map(a => a.vertices)
+      );
+      this.colors = ([] as number[]).concat(...lineVertices.map(a => a.colors));
     }
 
-    if (this.linesAdded > 0) {
-      // If a line is added we only need to calculate this
-      const start = this.lines.length - this.linesAdded;
-      for (let n = 0; n < this.linesAdded; n++) {
-        const line = this.lines[start + n];
-        this.vertices = this.vertices.concat(this.pen.generateVertices(line));
-      }
-      this.linesAdded = 0;
-    }
-
-    return new Float32Array(this.vertices);
+    return {
+      vertices: new Float32Array(this.vertices),
+      color: new Float32Array(this.colors)
+    };
   }
 }

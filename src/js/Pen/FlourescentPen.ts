@@ -1,11 +1,15 @@
 import Pen from "./Pen";
-import { Point } from "../LineGenerator";
+import { Point, Line } from "../LineGenerator";
 import { clamp } from "../utils";
+import { Color } from "../LineRenderer";
 
 export default class FlourescentPen extends Pen {
-  public generateVertices(line: Point[]): number[] {
+  public generateVertices(
+    lineData: Line
+  ): { vertices: number[]; colors: number[] } {
+    const line = lineData.points;
     if (line.length === 0) {
-      return [];
+      return { vertices: [], colors: [] };
     }
 
     let oldPoint = null;
@@ -86,10 +90,15 @@ export default class FlourescentPen extends Pen {
       meshPoints[n - 1]
     );
 
-    return meshPoints;
+    const colors = new Array((meshPoints.length / 2) * 4);
+    for (let i = 0; i < colors.length; i++) {
+      colors[i] = this.getColor()[i % 4];
+    }
+
+    return { vertices: meshPoints, colors };
   }
 
-  public getColor(): string {
-    throw new Error("Method not implemented.");
+  public getColor(): Color {
+    throw [0, 0, 0, 0];
   }
 }

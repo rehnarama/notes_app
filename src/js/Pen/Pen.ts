@@ -1,4 +1,5 @@
 import { Line, Point } from "../LineGenerator";
+import { Color } from "../LineRenderer";
 
 const CIRCLE_VERTICE_PER_PIXEL = 0.5;
 const DEFAULT_LINE_WIDTH = 1;
@@ -43,7 +44,9 @@ export default abstract class Pen {
     return vertices;
   }
 
-  public abstract generateVertices(line: Line): number[];
+  public abstract generateVertices(
+    line: Line
+  ): { vertices: number[]; colors: number[] };
 
-  public abstract getColor(): string;
+  public abstract getColor(): Color;
 }

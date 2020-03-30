@@ -2,7 +2,7 @@ import { Line, Point } from "./LineGenerator";
 
 const POINT_PER_PIXEL = 0.5;
 
-function calculateQuadraticPoints(points: Line) {
+function calculateQuadraticPoints(points: Point[]) {
   const start = new Point(
     (points[0].x + points[1].x) / 2,
     (points[0].y + points[1].y) / 2,
@@ -27,8 +27,8 @@ function interpolatePoints(t: number, p1: Point, p2: Point, p3: Point) {
   return new Point(x, y, pressure);
 }
 
-export default function interpolateLine(line: Line): Line {
-  const newLine: Line = [];
+export default function interpolateLine(line: Point[]): Point[] {
+  const newLine: Point[] = [];
 
   // Since every point requries three points,
   // we have to pad to display first and last point

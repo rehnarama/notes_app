@@ -1,12 +1,14 @@
 import { INetwork, Hook, FullMeshNetwork, BasicBroadcast } from "network";
 
-import { Point, Line } from "./LineGenerator";
+import LineGenerator, { Point, Line } from "./LineGenerator";
+import { Color } from "./LineRenderer";
 
 export type LineId = number;
 
 interface BeginMessage {
   name: "begin";
   id: LineId;
+  color: Color;
 }
 interface AddMessage {
   name: "add";
@@ -20,7 +22,7 @@ interface RmvMessage {
 type Message = BeginMessage | AddMessage | RmvMessage;
 
 export default class Lines {
-  public onChange = new Hook();
+  public onChange = new Hook<(msg: Message) => void>();
   private currentId: LineId = 0;
   private bb: BasicBroadcast;
   private fmn: INetwork;
@@ -36,15 +38,15 @@ export default class Lines {
 
   private handleOnDeliver = (message: Message) => {
     if (message.name === "begin") {
-      this.lines.set(message.id, []);
+      this.lines.set(message.id, { points: [], color: message.color });
     } else if (message.name === "add") {
       const line = this.lines.get(message.id);
-      line?.push(message.point);
+      line?.points.push(message.point);
     } else if (message.name === "rmv") {
       this.lines.delete(message.id);
     }
-    this.onChange.call();
-  }
+    this.onChange.call(message);
+  };
 
   public beginLine = (): LineId => {
     this.currentId = Math.round(Math.random() * 1000000);

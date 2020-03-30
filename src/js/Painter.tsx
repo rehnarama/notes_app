@@ -59,7 +59,15 @@ class Painter extends React.PureComponent<Props> {
   constructor(props: Props) {
     super(props);
 
-    lines.onChange.add(() => {
+    lines.onChange.add(msg => {
+      if (msg.name === "add") {
+        const line = lines.getLines().get(msg.id);
+        if (line) {
+          this.lineGenerator.addLine(msg.id, line);
+        }
+      } else if (msg.name === "rmv") {
+        this.lineGenerator.removeLine(msg.id);
+      }
       this.requestRenderFrame();
     });
   }
@@ -171,9 +179,9 @@ class Painter extends React.PureComponent<Props> {
     const allLines = lines.getLines();
     const scaleFactor = window.devicePixelRatio;
     for (const [id, line] of allLines) {
-      for (let pointIndex = 0; pointIndex < line.length; pointIndex++) {
-        const dx = line[pointIndex].x - point.x;
-        const dy = line[pointIndex].y - point.y;
+      for (let pointIndex = 0; pointIndex < line.points.length; pointIndex++) {
+        const dx = line.points[pointIndex].x - point.x;
+        const dy = line.points[pointIndex].y - point.y;
 
         const distSq = dx * dx + dy * dy;
 
@@ -244,11 +252,8 @@ class Painter extends React.PureComponent<Props> {
 
     this.lineRenderer.clear();
 
-    const generator = new LineGenerator(this.pen);
-    for (const line of lines.getLines().values()) {
-      generator.addLine(line);
-    }
-    this.lineRenderer.draw(generator.generateVertices());
+    const data = this.lineGenerator.generateData();
+    this.lineRenderer.draw(data.vertices, data.color);
 
     this.isDirty = false;
   };
@@ -265,7 +270,10 @@ class Painter extends React.PureComponent<Props> {
       new Point(this.getX(), this.getY(), Math.random()),
       new Point(this.getX(), this.getY(), Math.random())
     ];
-    this.lineGenerator.addLine(line);
+    this.lineGenerator.addLine(Math.random(), {
+      points: line,
+      color: [0, 0, 0, 1]
+    });
     this.requestRenderFrame();
     window.requestAnimationFrame(this.addRandomLine);
   };
