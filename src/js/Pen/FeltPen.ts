@@ -1,6 +1,5 @@
 import Pen from "./Pen";
-import { Point, Line } from "../LineGenerator";
-import { Color } from "../LineRenderer";
+import { Line } from "../LineGenerator";
 
 const MAX_ANGLE = 0.5;
 
@@ -113,12 +112,9 @@ export default class FeltPen extends Pen {
 
     const colors = new Array((meshPoints.length / 2) * 4);
     for (let i = 0; i < colors.length; i++) {
-      colors[i] = this.getColor()[i % 4];
+      colors[i] = lineData.color[i % 4];
     }
 
     return { vertices: meshPoints, colors };
-  }
-  public getColor(): Color {
-    return [1, 0.412, 0.712, 1];
   }
 }

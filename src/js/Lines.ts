@@ -48,11 +48,12 @@ export default class Lines {
     this.onChange.call(message);
   };
 
-  public beginLine = (): LineId => {
+  public beginLine = (color: Color = [0, 0, 0, 1]): LineId => {
     this.currentId = Math.round(Math.random() * 1000000);
     this.bb.bBroadcast({
       name: "begin",
-      id: this.currentId
+      id: this.currentId,
+      color
     } as BeginMessage);
     return this.currentId;
   };

@@ -1,10 +1,11 @@
 import * as React from "react";
 import LineGenerator from "./LineGenerator";
-import LineRenderer from "./LineRenderer";
+import LineRenderer, { Color } from "./LineRenderer";
 import FeltPen from "./Pen/FeltPen";
 import Pen from "./Pen/Pen";
 import { FullMeshNetwork, TaggedCausalStableBroadcast as TCSB } from "network";
 import Lines from "./Lines";
+import ColorPicker from "./ColorPicker";
 
 const fmn = new FullMeshNetwork("wss://rehnarama-notes.glitch.me");
 const lines = new Lines(fmn);
@@ -55,6 +56,7 @@ class Painter extends React.PureComponent<Props> {
   lineGenerator = new LineGenerator(this.pen);
   lineRenderer: LineRenderer | null = null;
   targetRef = React.createRef<HTMLDivElement>();
+  color: Color = [0, 0, 0, 1];
 
   constructor(props: Props) {
     super(props);
@@ -160,7 +162,7 @@ class Painter extends React.PureComponent<Props> {
         event.pressure
       );
 
-      lines.beginLine();
+      lines.beginLine(this.color);
       lines.addPoint(point);
       this.previousPoint = point;
     }
@@ -282,6 +284,10 @@ class Painter extends React.PureComponent<Props> {
     this.requestRenderFrame();
   };
 
+  onPick = (color: Color) => {
+    this.color = color;
+  };
+
   render() {
     return (
       <React.Fragment>
@@ -296,6 +302,15 @@ class Painter extends React.PureComponent<Props> {
             overflow: "hidden"
           }}
         />
+        <div
+          style={{
+            position: "fixed",
+            left: 0,
+            top: 0
+          }}
+        >
+          <ColorPicker onPick={this.onPick} />
+        </div>
         {/* <button */}
         {/*   style={{ */}
         {/*     position: "fixed", */}

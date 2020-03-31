@@ -47,6 +47,4 @@ export default abstract class Pen {
   public abstract generateVertices(
     line: Line
   ): { vertices: number[]; colors: number[] };
-
-  public abstract getColor(): Color;
 }

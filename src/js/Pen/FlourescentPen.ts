@@ -1,7 +1,6 @@
 import Pen from "./Pen";
-import { Point, Line } from "../LineGenerator";
+import { Line } from "../LineGenerator";
 import { clamp } from "../utils";
-import { Color } from "../LineRenderer";
 
 export default class FlourescentPen extends Pen {
   public generateVertices(
@@ -96,9 +95,5 @@ export default class FlourescentPen extends Pen {
     }
 
     return { vertices: meshPoints, colors };
-  }
-
-  public getColor(): Color {
-    throw [0, 0, 0, 0];
   }
 }
