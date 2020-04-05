@@ -47,6 +47,9 @@ interface Props {
 class Painter extends React.PureComponent<Props> {
   previousPoint?: Point;
 
+  isMoving = false;
+  moveStart = { x: 0, y: 0 };
+
   pointerIsDown = false;
   erase = false;
 
@@ -153,29 +156,40 @@ class Painter extends React.PureComponent<Props> {
   };
 
   handleOnPointerDown: PointerEventHandler = event => {
+    if (event.pointerType === "touch") {
+      this.isMoving = true;
+      this.moveStart.x = event.clientX;
+      this.moveStart.y = event.clientY;
+      return;
+    }
+
     this.pointerIsDown = true;
 
     if (!this.isEraseButtonDown(event)) {
+      lines.beginLine(this.color);
       const point = new Point(
         event.clientX * Painter.getScaleFactor(),
         event.clientY * Painter.getScaleFactor(),
         event.pressure
       );
 
-      lines.beginLine(this.color);
-      lines.addPoint(point);
-      this.previousPoint = point;
+      this.addPoint(point);
     }
   };
 
   handleOnPointerUp: PointerEventHandler = event => {
     this.pointerIsDown = false;
+    this.isMoving = false;
   };
 
   eraseLine: PointerEventHandler = event => {
+    if (this.lineRenderer === null) {
+      return;
+    }
+
     const point = new Point(
-      event.clientX * Painter.getScaleFactor(),
-      event.clientY * Painter.getScaleFactor()
+      event.clientX * Painter.getScaleFactor() - this.lineRenderer.position.x,
+      event.clientY * Painter.getScaleFactor() - this.lineRenderer.position.y
     );
 
     const allLines = lines.getLines();
@@ -196,6 +210,16 @@ class Painter extends React.PureComponent<Props> {
   };
 
   handleOnPointerMove: PointerEventHandler = event => {
+    if (this.isMoving && this.lineRenderer) {
+      const deltaX = this.moveStart.x - event.clientX;
+      const deltaY = this.moveStart.y - event.clientY;
+      this.lineRenderer.position.x -= deltaX * Painter.getScaleFactor();
+      this.lineRenderer.position.y -= deltaY * Painter.getScaleFactor();
+      this.moveStart.x = event.clientX;
+      this.moveStart.y = event.clientY;
+      this.requestRenderFrame();
+      return;
+    }
     if (!this.pointerIsDown) {
       return;
     }
@@ -216,8 +240,26 @@ class Painter extends React.PureComponent<Props> {
 
     const curX = event.clientX * Painter.getScaleFactor();
     const curY = event.clientY * Painter.getScaleFactor();
-
     const point = new Point(curX, curY, event.pressure);
+
+    this.addPoint(point);
+  };
+
+  requestRenderFrame = () => {
+    if (this.isDirty) {
+      return;
+    }
+
+    this.isDirty = true;
+    window.requestAnimationFrame(this.renderFrame);
+  };
+
+  private addPoint(point: Point) {
+    if (this.lineRenderer) {
+      point.x -= this.lineRenderer.position.x;
+      point.y -= this.lineRenderer.position.y;
+    }
+
     if (this.previousPoint) {
       const dx = this.previousPoint.x - point.x;
       const dy = this.previousPoint.y - point.y;
@@ -229,19 +271,9 @@ class Painter extends React.PureComponent<Props> {
         return;
       }
     }
-
     lines.addPoint(point);
     this.previousPoint = point;
-  };
-
-  requestRenderFrame = () => {
-    if (this.isDirty) {
-      return;
-    }
-
-    this.isDirty = true;
-    window.requestAnimationFrame(this.renderFrame);
-  };
+  }
 
   static getScaleFactor() {
     return window.devicePixelRatio;
@@ -266,19 +298,6 @@ class Painter extends React.PureComponent<Props> {
   getY = () => {
     return Math.random() * window.innerHeight * this.pen.getScaleFactor();
   };
-  addRandomLine = () => {
-    const line: Line = [
-      new Point(this.getX(), this.getY(), Math.random()),
-      new Point(this.getX(), this.getY(), Math.random()),
-      new Point(this.getX(), this.getY(), Math.random())
-    ];
-    this.lineGenerator.addLine(Math.random(), {
-      points: line,
-      color: [0, 0, 0, 1]
-    });
-    this.requestRenderFrame();
-    window.requestAnimationFrame(this.addRandomLine);
-  };
 
   clear = () => {
     this.requestRenderFrame();
@@ -286,6 +305,19 @@ class Painter extends React.PureComponent<Props> {
 
   onPick = (color: Color) => {
     this.color = color;
+  };
+
+  goLeft = () => {
+    if (this.lineRenderer) {
+      this.lineRenderer.position.x -= 10;
+    }
+    this.requestRenderFrame();
+  };
+  goRight = () => {
+    if (this.lineRenderer) {
+      this.lineRenderer.position.x += 10;
+    }
+    this.requestRenderFrame();
   };
 
   render() {
@@ -310,18 +342,9 @@ class Painter extends React.PureComponent<Props> {
           }}
         >
           <ColorPicker onPick={this.onPick} />
+          <button onClick={this.goLeft}>Left</button>
+          <button onClick={this.goRight}>Right</button>
         </div>
-        {/* <button */}
-        {/*   style={{ */}
-        {/*     position: "fixed", */}
-        {/*     left: 0, */}
-        {/*     top: 0, */}
-        {/*     width: 100 */}
-        {/*   }} */}
-        {/*   onClick={this.addRandomLine} */}
-        {/* > */}
-        {/*   Test */}
-        {/* </button> */}
       </React.Fragment>
     );
   }

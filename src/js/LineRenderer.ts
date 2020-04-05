@@ -11,9 +11,10 @@ attribute vec4 a_color;
 varying vec4 v_color;
 
 uniform vec2 u_resolution; 
+uniform vec2 u_position;
 
 void main() {
-  vec4 coord_position = -1.0 + 2.0 * vec4(a_position.xy / u_resolution.xy, 0, 1.0);
+  vec4 coord_position = -1.0 + 2.0 * vec4((a_position.xy + u_position) / u_resolution.xy, 0, 1.0);
   gl_Position = vec4(1.0, -1.0, 1.0, 1.0) * coord_position;
   v_color = a_color;
 }
@@ -30,6 +31,7 @@ void main(void) {
 export default class LineRenderer {
   private targetElement: HTMLElement;
   private gl: WebGLRenderingContext;
+  public position = { x: 0, y: 0 };
 
   private programInfo: twgl.ProgramInfo | null = null;
   constructor(targetElement: HTMLElement) {
@@ -102,6 +104,9 @@ export default class LineRenderer {
     );
 
     this.gl.useProgram(this.programInfo.program);
+    twgl.setUniforms(this.programInfo, {
+      u_position: [this.position.x, this.position.y]
+    });
     twgl.setBuffersAndAttributes(this.gl, this.programInfo, bufferInfo);
     twgl.drawBufferInfo(this.gl, bufferInfo, this.gl.TRIANGLE_STRIP);
 
