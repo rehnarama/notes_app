@@ -167,11 +167,7 @@ class Painter extends React.PureComponent<Props> {
 
     if (!this.isEraseButtonDown(event)) {
       lines.beginLine(this.color);
-      const point = new Point(
-        event.clientX * Painter.getScaleFactor(),
-        event.clientY * Painter.getScaleFactor(),
-        event.pressure
-      );
+      const point = new Point(event.clientX, event.clientY, event.pressure);
 
       this.addPoint(point);
     }
@@ -188,12 +184,11 @@ class Painter extends React.PureComponent<Props> {
     }
 
     const point = new Point(
-      event.clientX * Painter.getScaleFactor() - this.lineRenderer.position.x,
-      event.clientY * Painter.getScaleFactor() - this.lineRenderer.position.y
+      event.clientX - this.lineRenderer.position.x,
+      event.clientY - this.lineRenderer.position.y
     );
 
     const allLines = lines.getLines();
-    const scaleFactor = window.devicePixelRatio;
     for (const [id, line] of allLines) {
       for (let pointIndex = 0; pointIndex < line.points.length; pointIndex++) {
         const dx = line.points[pointIndex].x - point.x;
@@ -202,7 +197,7 @@ class Painter extends React.PureComponent<Props> {
         const distSq = dx * dx + dy * dy;
 
         // Found a line close enough
-        if (distSq < MIN_REMOVE_DISTANCE * MIN_REMOVE_DISTANCE * scaleFactor) {
+        if (distSq < MIN_REMOVE_DISTANCE * MIN_REMOVE_DISTANCE) {
           lines.removeLine(id);
         }
       }
@@ -213,8 +208,8 @@ class Painter extends React.PureComponent<Props> {
     if (this.isMoving && this.lineRenderer) {
       const deltaX = this.moveStart.x - event.clientX;
       const deltaY = this.moveStart.y - event.clientY;
-      this.lineRenderer.position.x -= deltaX * Painter.getScaleFactor();
-      this.lineRenderer.position.y -= deltaY * Painter.getScaleFactor();
+      this.lineRenderer.position.x -= deltaX;
+      this.lineRenderer.position.y -= deltaY;
       this.moveStart.x = event.clientX;
       this.moveStart.y = event.clientY;
       this.requestRenderFrame();
@@ -238,8 +233,8 @@ class Painter extends React.PureComponent<Props> {
       return;
     }
 
-    const curX = event.clientX * Painter.getScaleFactor();
-    const curY = event.clientY * Painter.getScaleFactor();
+    const curX = event.clientX;
+    const curY = event.clientY;
     const point = new Point(curX, curY, event.pressure);
 
     this.addPoint(point);
@@ -264,19 +259,12 @@ class Painter extends React.PureComponent<Props> {
       const dx = this.previousPoint.x - point.x;
       const dy = this.previousPoint.y - point.y;
       // We subsample for better quality and memory efficiency
-      if (
-        dx * dx + dy * dy <
-        MIN_DISTANCE * MIN_DISTANCE * Painter.getScaleFactor()
-      ) {
+      if (dx * dx + dy * dy < MIN_DISTANCE * MIN_DISTANCE) {
         return;
       }
     }
     lines.addPoint(point);
     this.previousPoint = point;
-  }
-
-  static getScaleFactor() {
-    return window.devicePixelRatio;
   }
 
   renderFrame: FrameRequestCallback = () => {
@@ -293,10 +281,10 @@ class Painter extends React.PureComponent<Props> {
   };
 
   getX = () => {
-    return Math.random() * window.innerWidth * this.pen.getScaleFactor();
+    return Math.random() * window.innerWidth;
   };
   getY = () => {
-    return Math.random() * window.innerHeight * this.pen.getScaleFactor();
+    return Math.random() * window.innerHeight;
   };
 
   clear = () => {

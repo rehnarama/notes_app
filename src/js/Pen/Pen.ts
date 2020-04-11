@@ -5,20 +5,10 @@ const CIRCLE_VERTICE_PER_PIXEL = 0.5;
 const DEFAULT_LINE_WIDTH = 1;
 
 export default abstract class Pen {
-  private scaleFactor = window.devicePixelRatio;
-
-  public updateScaleFactor() {
-    this.scaleFactor = window.devicePixelRatio;
-  }
-
-  public getScaleFactor() {
-    return this.scaleFactor;
-  }
-
   protected getPointRadius(point: Point) {
     const pressure = point.pressure;
     const pointSquare = pressure * pressure;
-    return (DEFAULT_LINE_WIDTH + 5 * pointSquare) * this.scaleFactor;
+    return DEFAULT_LINE_WIDTH + 5 * pointSquare;
   }
 
   protected generateCircleVertices(point: Point) {
