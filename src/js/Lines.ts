@@ -9,6 +9,7 @@ interface BeginMessage {
   name: "begin";
   id: LineId;
   color: Color;
+  thickness: number;
 }
 interface AddMessage {
   name: "add";
@@ -38,7 +39,11 @@ export default class Lines {
 
   private handleOnDeliver = (message: Message) => {
     if (message.name === "begin") {
-      this.lines.set(message.id, { points: [], color: message.color });
+      this.lines.set(message.id, {
+        points: [],
+        color: message.color,
+        thickness: message.thickness
+      });
     } else if (message.name === "add") {
       const line = this.lines.get(message.id);
       line?.points.push(message.point);
@@ -48,12 +53,16 @@ export default class Lines {
     this.onChange.call(message);
   };
 
-  public beginLine = (color: Color = [0, 0, 0, 1]): LineId => {
+  public beginLine = (
+    color: Color = [0, 0, 0, 1],
+    thickness: number = 1
+  ): LineId => {
     this.currentId = Math.round(Math.random() * 1000000);
     this.bb.bBroadcast({
       name: "begin",
       id: this.currentId,
-      color
+      color,
+      thickness
     } as BeginMessage);
     return this.currentId;
   };

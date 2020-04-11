@@ -32,9 +32,7 @@ const ColorPicker: React.SFC<{ onPick: PickFunction }> = ({ onPick }) => {
   return (
     <div
       style={{
-        display: "flex",
-        boxShadow: "0 0 8px rgba(0,0,0,0.4)",
-        padding: 16
+        display: "flex"
       }}
     >
       <ColorButton color={[0, 0, 0, 1]} onPick={onPick} />

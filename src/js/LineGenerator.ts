@@ -20,6 +20,7 @@ class Point {
 interface Line {
   points: Point[];
   color: Color;
+  thickness: number;
 }
 export { Point, Line };
 
@@ -40,10 +41,11 @@ export default class LineGenerator {
   }
 
   public addLine(id: LineId, line: Line) {
-    const interpolatedLine = {
+    const interpolatedLine: Line = {
       points: interpolateLine(line.points),
-      color: line.color
-    }
+      color: line.color,
+      thickness: line.thickness
+    };
     const vertices = this.pen.generateVertices(interpolatedLine);
     this.isDirty = this.lineVertices.has(id); // Since we have to clear the old vertices in this case...
     this.lineVertices.set(id, vertices);

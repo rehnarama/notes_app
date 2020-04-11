@@ -47,33 +47,27 @@ export default class FeltPen extends Pen {
       let perpX = Math.cos(perp);
       let perpY = Math.sin(perp);
 
-      const nextA = {
-        x:
-          point.x +
-          Math.cos(nextAngle + Math.PI / 2) * this.getPointRadius(point),
-        y:
-          point.y +
-          Math.sin(nextAngle + Math.PI / 2) * this.getPointRadius(point)
-      };
+      const pointRadius = this.getPointRadius(point) * lineData.thickness;
+      const oldPointRadius = this.getPointRadius(oldPoint) * lineData.thickness;
 
       let A = {
-        x: oldPoint.x + perpX * this.getPointRadius(oldPoint),
-        y: oldPoint.y + perpY * this.getPointRadius(oldPoint)
+        x: oldPoint.x + perpX * oldPointRadius,
+        y: oldPoint.y + perpY * oldPointRadius
       };
 
       let B = {
-        x: oldPoint.x - perpX * this.getPointRadius(oldPoint),
-        y: oldPoint.y - perpY * this.getPointRadius(oldPoint)
+        x: oldPoint.x - perpX * oldPointRadius,
+        y: oldPoint.y - perpY * oldPointRadius
       };
 
       let C = {
-        x: point.x + perpX * this.getPointRadius(point),
-        y: point.y + perpY * this.getPointRadius(point)
+        x: point.x + perpX * pointRadius,
+        y: point.y + perpY * pointRadius
       };
 
       let D = {
-        x: point.x - perpX * this.getPointRadius(point),
-        y: point.y - perpY * this.getPointRadius(point)
+        x: point.x - perpX * pointRadius,
+        y: point.y - perpY * pointRadius
       };
 
       meshPoints.push(A.x, A.y, B.x, B.y, C.x, C.y, D.x, D.y);
@@ -84,10 +78,8 @@ export default class FeltPen extends Pen {
       const sign = Math.sign(angle - nextAngle);
       for (let theta = minAngle; theta < maxAngle; theta += MAX_ANGLE) {
         const perpTheta = theta + Math.PI / 2;
-        const x =
-          point.x + sign * Math.cos(perpTheta) * this.getPointRadius(point);
-        const y =
-          point.y + sign * Math.sin(perpTheta) * this.getPointRadius(point);
+        const x = point.x + sign * Math.cos(perpTheta) * pointRadius;
+        const y = point.y + sign * Math.sin(perpTheta) * pointRadius;
         meshPoints.push(x, y, D.x, D.y);
       }
       // Add final point to fix the seam
@@ -96,8 +88,11 @@ export default class FeltPen extends Pen {
       oldPoint = point;
     }
 
-    const firstBall = this.generateCircleVertices(line[0]);
-    const lastBall = this.generateCircleVertices(line[line.length - 1]);
+    const firstBall = this.generateCircleVertices(line[0], lineData.thickness);
+    const lastBall = this.generateCircleVertices(
+      line[line.length - 1],
+      lineData.thickness
+    );
     const n = lastBall.length;
     // We add these vertices so that flat triangles
     // are drawn between disjoint objects

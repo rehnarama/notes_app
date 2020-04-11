@@ -44,7 +44,12 @@ interface Props {
   initialLineData?: Line[];
 }
 
-class Painter extends React.PureComponent<Props> {
+interface State {
+  color: Color;
+  thickness: number;
+}
+
+class Painter extends React.PureComponent<Props, State> {
   previousPoint?: Point;
 
   isMoving = false;
@@ -59,10 +64,13 @@ class Painter extends React.PureComponent<Props> {
   lineGenerator = new LineGenerator(this.pen);
   lineRenderer: LineRenderer | null = null;
   targetRef = React.createRef<HTMLDivElement>();
-  color: Color = [0, 0, 0, 1];
 
   constructor(props: Props) {
     super(props);
+    this.state = {
+      color: [0, 0, 0, 1],
+      thickness: 1
+    };
 
     lines.onChange.add(msg => {
       if (msg.name === "add") {
@@ -166,7 +174,7 @@ class Painter extends React.PureComponent<Props> {
     this.pointerIsDown = true;
 
     if (!this.isEraseButtonDown(event)) {
-      lines.beginLine(this.color);
+      lines.beginLine(this.state.color, this.state.thickness);
       const point = new Point(event.clientX, event.clientY, event.pressure);
 
       this.addPoint(point);
@@ -292,7 +300,15 @@ class Painter extends React.PureComponent<Props> {
   };
 
   onPick = (color: Color) => {
-    this.color = color;
+    this.setState({
+      color
+    });
+  };
+
+  onThicknessChange: React.ChangeEventHandler<HTMLInputElement> = e => {
+    this.setState({
+      thickness: e.currentTarget.valueAsNumber
+    });
   };
 
   goLeft = () => {
@@ -326,12 +342,25 @@ class Painter extends React.PureComponent<Props> {
           style={{
             position: "fixed",
             left: 0,
-            top: 0
+            top: 0,
+            right: 0,
+            height: 64,
+            background: "white",
+            display: "flex",
+            alignItems: "middle",
+            boxShadow: "0 0 8px rgba(0,0,0,0.4)",
+            padding: 16
           }}
         >
           <ColorPicker onPick={this.onPick} />
-          <button onClick={this.goLeft}>Left</button>
-          <button onClick={this.goRight}>Right</button>
+          <input
+            type="range"
+            min="0.1"
+            max="3"
+            step="0.2"
+            value={this.state.thickness}
+            onChange={this.onThicknessChange}
+          ></input>
         </div>
       </React.Fragment>
     );

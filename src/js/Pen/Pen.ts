@@ -11,10 +11,10 @@ export default abstract class Pen {
     return DEFAULT_LINE_WIDTH + 5 * pointSquare;
   }
 
-  protected generateCircleVertices(point: Point) {
+  protected generateCircleVertices(point: Point, thickness: number = 1) {
     const vertices = [];
 
-    const radius = this.getPointRadius(point);
+    const radius = this.getPointRadius(point) * thickness;
     const circumference = radius * Math.PI;
     const nVertices = CIRCLE_VERTICE_PER_PIXEL * circumference;
     const dTheta = (2 * Math.PI) / nVertices;
