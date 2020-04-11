@@ -65,6 +65,9 @@ class Painter extends React.PureComponent<Props, State> {
   lineRenderer: LineRenderer | null = null;
   targetRef = React.createRef<HTMLDivElement>();
 
+  previewRef = React.createRef<HTMLDivElement>();
+  previewRenderer: LineRenderer | null = null;
+
   constructor(props: Props) {
     super(props);
     this.state = {
@@ -86,12 +89,15 @@ class Painter extends React.PureComponent<Props, State> {
   }
 
   componentDidMount() {
-    if (this.targetRef.current === null) {
+    if (this.targetRef.current === null || this.previewRef.current === null) {
       throw new Error("Could not find target element");
     }
 
     this.lineRenderer = new LineRenderer(this.targetRef.current);
     this.requestRenderFrame();
+
+    this.previewRenderer = new LineRenderer(this.previewRef.current);
+    this.renderPreview();
 
     this.targetRef.current.addEventListener(
       "pointermove",
@@ -147,6 +153,10 @@ class Painter extends React.PureComponent<Props, State> {
     if (this.lineRenderer !== null) {
       this.lineRenderer.updateSize();
       this.requestRenderFrame();
+    }
+    if (this.previewRenderer !== null) {
+      this.previewRenderer.updateSize();
+      this.renderPreview();
     }
   };
 
@@ -288,6 +298,27 @@ class Painter extends React.PureComponent<Props, State> {
     this.isDirty = false;
   };
 
+  renderPreview = () => {
+    if (this.previewRenderer === null) {
+      return;
+    }
+
+    const generator = new LineGenerator(this.pen);
+    generator.addLine(0, {
+      points: [
+        { pressure: 0.8, x: 10, y: 20 },
+        { pressure: 0.6, x: 60, y: 60 },
+        { pressure: 0.5, x: 70, y: 20 },
+        { pressure: 0.2, x: 140, y: 60 }
+      ],
+      color: this.state.color,
+      thickness: this.state.thickness
+    });
+
+    const data = generator.generateData();
+    this.previewRenderer.draw(data.vertices, data.color);
+  };
+
   getX = () => {
     return Math.random() * window.innerWidth;
   };
@@ -300,15 +331,21 @@ class Painter extends React.PureComponent<Props, State> {
   };
 
   onPick = (color: Color) => {
-    this.setState({
-      color
-    });
+    this.setState(
+      {
+        color
+      },
+      this.renderPreview
+    );
   };
 
   onThicknessChange: React.ChangeEventHandler<HTMLInputElement> = e => {
-    this.setState({
-      thickness: e.currentTarget.valueAsNumber
-    });
+    this.setState(
+      {
+        thickness: e.currentTarget.valueAsNumber
+      },
+      this.renderPreview
+    );
   };
 
   goLeft = () => {
@@ -347,9 +384,8 @@ class Painter extends React.PureComponent<Props, State> {
             height: 64,
             background: "white",
             display: "flex",
-            alignItems: "middle",
-            boxShadow: "0 0 8px rgba(0,0,0,0.4)",
-            padding: 16
+            alignItems: "center",
+            boxShadow: "0 0 8px rgba(0,0,0,0.4)"
           }}
         >
           <ColorPicker onPick={this.onPick} />
@@ -361,6 +397,13 @@ class Painter extends React.PureComponent<Props, State> {
             value={this.state.thickness}
             onChange={this.onThicknessChange}
           ></input>
+          <div
+            ref={this.previewRef}
+            style={{
+              width: 200,
+              height: "100%"
+            }}
+          />
         </div>
       </React.Fragment>
     );
