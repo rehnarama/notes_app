@@ -1,6 +1,6 @@
 import { Point } from "../Lines/LineGenerator";
 
-const CIRCLE_VERTICE_PER_PIXEL = 0.5;
+const CIRCLE_VERTICE_PER_PIXEL = 1;
 const DEFAULT_LINE_WIDTH = 1;
 
 export function getPointRadius(point: Point) {
