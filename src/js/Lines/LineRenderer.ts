@@ -60,7 +60,7 @@ export default class LineRenderer {
     const oldZoom = this.zoom;
 
     if (oldZoom + zoomDelta < 0.1) {
-      zoomDelta = 0;
+      zoomDelta = 0.1 - oldZoom;
     }
 
     const deltaX = around.x - this.position.x / this.zoom;

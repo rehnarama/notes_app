@@ -84,6 +84,9 @@ class Painter extends React.PureComponent<Props> {
       "contextmenu",
       this.handleOnContextMenu
     );
+    this.targetRef.current.addEventListener("wheel", this.onWheel, {
+      passive: false
+    });
 
     window.addEventListener("resize", this.handleOnResize);
   }
@@ -108,6 +111,7 @@ class Painter extends React.PureComponent<Props> {
         "contextmenu",
         this.handleOnContextMenu
       );
+      this.targetRef.current.removeEventListener("wheel", this.onWheel);
     }
   }
 
@@ -139,7 +143,10 @@ class Painter extends React.PureComponent<Props> {
     let action: Action | null = null;
     if (event.pointerType === "touch") {
       action = Action.Move;
-    } else if (this.isEraseButton(event) && this.drawPointerIsDown || this.props.erase && this.drawPointerIsDown) {
+    } else if (
+      (this.isEraseButton(event) && this.drawPointerIsDown) ||
+      (this.props.erase && this.drawPointerIsDown)
+    ) {
       action = Action.Erase;
     } else if (this.drawPointerIsDown) {
       action = Action.Draw;
@@ -273,20 +280,31 @@ class Painter extends React.PureComponent<Props> {
     this.isDirty = false;
   };
 
-  onScroll: React.WheelEventHandler = e => {
+  private wheelEventToDeltaPixels = (e: WheelEvent) => {
+    if (e.deltaMode === 0) {
+      return { x: e.deltaX / 200, y: e.deltaY / 200 };
+    } else if (e.deltaMode === 1) {
+      return { x: e.deltaX / 3, y: e.deltaY / 3 };
+    } else {
+      return { x: e.deltaX / 800, y: e.deltaY / 800 };
+    }
+  };
+
+  onWheel = (e: WheelEvent) => {
+    const delta = this.wheelEventToDeltaPixels(e);
     if (this.lineRenderer) {
       if (e.ctrlKey) {
-        let zoomDelta = -e.deltaY * 0.03;
+        let zoomDelta = -delta.y * 0.1;
 
-        const x = e.nativeEvent.offsetX / this.lineRenderer.zoom;
-        const y = e.nativeEvent.offsetY / this.lineRenderer.zoom;
+        const x = e.offsetX / this.lineRenderer.zoom;
+        const y = e.offsetY / this.lineRenderer.zoom;
 
         this.lineRenderer.setZoom(this.lineRenderer.zoom + zoomDelta, { x, y });
       } else if (e.shiftKey) {
-        this.lineRenderer.position.x += e.deltaY / this.lineRenderer.zoom;
+        this.lineRenderer.position.x += (10 * delta.y) / this.lineRenderer.zoom;
       } else {
-        this.lineRenderer.position.x += e.deltaX / this.lineRenderer.zoom;
-        this.lineRenderer.position.y += e.deltaY / this.lineRenderer.zoom;
+        this.lineRenderer.position.x += (10 * delta.x) / this.lineRenderer.zoom;
+        this.lineRenderer.position.y += (10 * delta.y) / this.lineRenderer.zoom;
       }
       this.requestRenderFrame();
     }
@@ -301,7 +319,6 @@ class Painter extends React.PureComponent<Props> {
           touchAction: "none",
           overflow: "hidden"
         }}
-        onWheel={this.onScroll}
       />
     );
   }
