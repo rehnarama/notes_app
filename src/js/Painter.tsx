@@ -271,6 +271,8 @@ class Painter extends React.PureComponent<Props, State> {
     if (this.lineRenderer) {
       point.x -= this.lineRenderer.position.x;
       point.y -= this.lineRenderer.position.y;
+      point.x /= this.lineRenderer.zoom;
+      point.y /= this.lineRenderer.zoom;
     }
 
     if (this.previousPoint) {
@@ -363,11 +365,18 @@ class Painter extends React.PureComponent<Props, State> {
 
   onScroll: React.WheelEventHandler = e => {
     if (this.lineRenderer) {
-      if (e.shiftKey) {
-        this.lineRenderer.position.x += e.deltaY;
+      if (e.ctrlKey) {
+        let zoomDelta = -e.deltaY * 0.03;
+
+        const x = e.clientX / this.lineRenderer.zoom;
+        const y = e.clientY / this.lineRenderer.zoom;
+
+        this.lineRenderer.setZoom(this.lineRenderer.zoom + zoomDelta, { x, y });
+      } else if (e.shiftKey) {
+        this.lineRenderer.position.x += e.deltaY / this.lineRenderer.zoom;
       } else {
-        this.lineRenderer.position.x += e.deltaX;
-        this.lineRenderer.position.y += e.deltaY;
+        this.lineRenderer.position.x += e.deltaX / this.lineRenderer.zoom;
+        this.lineRenderer.position.y += e.deltaY / this.lineRenderer.zoom;
       }
       this.requestRenderFrame();
     }

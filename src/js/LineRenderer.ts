@@ -12,10 +12,11 @@ varying vec4 v_color;
 
 uniform vec2 u_resolution; 
 uniform float u_scale;
+uniform float u_zoom;
 uniform vec2 u_position;
 
 void main() {
-  vec4 coord_position = -1.0 + 2.0 * vec4(u_scale * (a_position.xy + u_position) / u_resolution.xy, 0, 1.0);
+  vec4 coord_position = -1.0 + 2.0 * vec4(u_scale * (u_zoom * a_position.xy + u_position) / u_resolution.xy, 0, 1.0);
   gl_Position = vec4(1.0, -1.0, 1.0, 1.0) * coord_position;
   v_color = a_color;
 }
@@ -33,6 +34,7 @@ export default class LineRenderer {
   private targetElement: HTMLElement;
   private gl: WebGLRenderingContext;
   public position = { x: 0, y: 0 };
+  public zoom: number = 1;
 
   private programInfo: twgl.ProgramInfo | null = null;
   constructor(targetElement: HTMLElement) {
@@ -51,6 +53,23 @@ export default class LineRenderer {
     this.programInfo = twgl.createProgramInfo(this.gl, [vsSource, fsSource]);
     this.gl.useProgram(this.programInfo.program);
     this.updateSize();
+  }
+
+  public setZoom(zoom: number, around: { x: number; y: number }) {
+    let zoomDelta = zoom - this.zoom;
+    const oldZoom = this.zoom;
+
+    if (oldZoom + zoomDelta < 0.1) {
+      zoomDelta = 0;
+    }
+
+    const deltaX = around.x - this.position.x / this.zoom;
+    this.position.x -= deltaX * zoomDelta;
+
+    const deltaY = around.y - this.position.y / this.zoom;
+    this.position.y -= deltaY * zoomDelta;
+
+    this.zoom += zoomDelta;
   }
 
   public updateSize() {
@@ -107,7 +126,8 @@ export default class LineRenderer {
 
     this.gl.useProgram(this.programInfo.program);
     twgl.setUniforms(this.programInfo, {
-      u_position: [this.position.x, this.position.y]
+      u_position: [this.position.x, this.position.y],
+      u_zoom: this.zoom
     });
     twgl.setBuffersAndAttributes(this.gl, this.programInfo, bufferInfo);
     twgl.drawBufferInfo(this.gl, bufferInfo, this.gl.TRIANGLE_STRIP);
