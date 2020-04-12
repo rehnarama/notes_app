@@ -1,8 +1,13 @@
 import * as React from "react";
-import Painter, { Line, Point } from "./Painter";
+import Painter from "./Painter";
 import { Color } from "../Lines/LineRenderer";
 import Toolbar from "./Toolbar";
 import classes from "./App.module.css";
+import { FullMeshNetwork } from "network";
+import Lines from "../Lines/Lines";
+
+const fmn = new FullMeshNetwork("wss://rehnarama-notes.glitch.me");
+const lines = new Lines(fmn);
 
 const App: React.SFC = () => {
   const [color, setColor] = React.useState<Color>([0, 0, 0, 1]);
@@ -18,7 +23,7 @@ const App: React.SFC = () => {
           color={color}
         />
       </header>
-      <Painter color={color} thickness={thickness} />
+      <Painter color={color} thickness={thickness} lines={lines} />
     </main>
   );
 };

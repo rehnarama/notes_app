@@ -2,16 +2,7 @@ import * as React from "react";
 import LineGenerator from "../Lines/LineGenerator";
 import LineRenderer, { Color } from "../Lines/LineRenderer";
 import FeltPen from "../Pen/FeltPen";
-import { FullMeshNetwork, TaggedCausalStableBroadcast as TCSB } from "network";
 import Lines from "../Lines/Lines";
-import ColorPicker from "./ColorPicker";
-
-const fmn = new FullMeshNetwork("wss://rehnarama-notes.glitch.me");
-const lines = new Lines(fmn);
-
-fmn.onConnection.add(() => {
-  console.log("yay");
-});
 
 const MIN_REMOVE_DISTANCE = 10;
 const MIN_DISTANCE = 6;
@@ -41,6 +32,7 @@ type PointerEventHandler = (event: PointerEvent) => void;
 interface Props {
   color: Color;
   thickness: number;
+  lines: Lines;
 }
 
 class Painter extends React.PureComponent<Props> {
@@ -61,9 +53,9 @@ class Painter extends React.PureComponent<Props> {
   constructor(props: Props) {
     super(props);
 
-    lines.onChange.add(msg => {
+    props.lines.onChange.add(msg => {
       if (msg.name === "add") {
-        const line = lines.getLines().get(msg.id);
+        const line = props.lines.getLines().get(msg.id);
         if (line) {
           this.lineGenerator.addLine(msg.id, line);
         }
@@ -163,7 +155,7 @@ class Painter extends React.PureComponent<Props> {
     this.pointerIsDown = true;
 
     if (!this.isEraseButtonDown(event)) {
-      lines.beginLine(this.props.color, this.props.thickness);
+      this.props.lines.beginLine(this.props.color, this.props.thickness);
       const point = new Point(event.offsetX, event.offsetY, event.pressure);
 
       this.addPoint(point);
@@ -185,7 +177,7 @@ class Painter extends React.PureComponent<Props> {
       event.offsetY - this.lineRenderer.position.y
     );
 
-    const allLines = lines.getLines();
+    const allLines = this.props.lines.getLines();
     for (const [id, line] of allLines) {
       for (let pointIndex = 0; pointIndex < line.points.length; pointIndex++) {
         const dx = line.points[pointIndex].x - point.x;
@@ -195,7 +187,7 @@ class Painter extends React.PureComponent<Props> {
 
         // Found a line close enough
         if (distSq < MIN_REMOVE_DISTANCE * MIN_REMOVE_DISTANCE) {
-          lines.removeLine(id);
+          this.props.lines.removeLine(id);
         }
       }
     }
@@ -262,7 +254,7 @@ class Painter extends React.PureComponent<Props> {
         return;
       }
     }
-    lines.addPoint(point);
+    this.props.lines.addPoint(point);
     this.previousPoint = point;
   }
 
