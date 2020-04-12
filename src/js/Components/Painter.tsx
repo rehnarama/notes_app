@@ -12,19 +12,27 @@ const DEFAULT_PRESSURE = 0.5;
 
 type PointerEventHandler = (event: PointerEvent) => void;
 
+enum Action {
+  Draw,
+  Move,
+  Erase,
+  Select
+}
+
 interface Props {
   color: Color;
   thickness: number;
   lines: Lines;
+  alwaysDraw?: boolean;
+  erase?: boolean;
 }
 
 class Painter extends React.PureComponent<Props> {
   previousPoint?: Point;
 
-  isMoving = false;
   moveStart = { x: 0, y: 0 };
 
-  pointerIsDown = false;
+  drawPointerIsDown = false;
   erase = false;
 
   isDirty = false;
@@ -114,7 +122,7 @@ class Painter extends React.PureComponent<Props> {
     }
   };
 
-  isEraseButtonDown = ({
+  isEraseButton = ({
     button,
     buttons
   }: {
@@ -127,17 +135,32 @@ class Painter extends React.PureComponent<Props> {
     return ((button === 5 || button === -1) && buttons === 32) || buttons === 2; // 2 is right-click
   };
 
-  handleOnPointerDown: PointerEventHandler = event => {
+  private guessAction = (event: PointerEvent): Action | null => {
+    let action: Action | null = null;
     if (event.pointerType === "touch") {
-      this.isMoving = true;
-      this.moveStart.x = event.offsetX;
-      this.moveStart.y = event.offsetY;
-      return;
+      action = Action.Move;
+    } else if (this.isEraseButton(event) && this.drawPointerIsDown || this.props.erase && this.drawPointerIsDown) {
+      action = Action.Erase;
+    } else if (this.drawPointerIsDown) {
+      action = Action.Draw;
     }
 
-    this.pointerIsDown = true;
+    return action;
+  };
 
-    if (!this.isEraseButtonDown(event)) {
+  private isDrawPointer = (event: PointerEvent) => {
+    return event.pointerType === "pen" || this.props.alwaysDraw === true;
+  };
+
+  handleOnPointerDown: PointerEventHandler = event => {
+    this.drawPointerIsDown = this.isDrawPointer(event);
+
+    const action = this.guessAction(event);
+
+    if (action === Action.Move) {
+      this.moveStart.x = event.offsetX;
+      this.moveStart.y = event.offsetY;
+    } else if (action === Action.Draw) {
       this.props.lines.beginLine(this.props.color, this.props.thickness);
       const point = new Point(event.offsetX, event.offsetY, event.pressure);
 
@@ -146,8 +169,7 @@ class Painter extends React.PureComponent<Props> {
   };
 
   handleOnPointerUp: PointerEventHandler = event => {
-    this.pointerIsDown = false;
-    this.isMoving = false;
+    this.drawPointerIsDown = false;
   };
 
   eraseLine: PointerEventHandler = event => {
@@ -177,7 +199,9 @@ class Painter extends React.PureComponent<Props> {
   };
 
   handleOnPointerMove: PointerEventHandler = event => {
-    if (this.isMoving && this.lineRenderer) {
+    const action = this.guessAction(event);
+
+    if (action === Action.Move && this.lineRenderer) {
       const deltaX = this.moveStart.x - event.offsetX;
       const deltaY = this.moveStart.y - event.offsetY;
       this.lineRenderer.position.x -= deltaX;
@@ -185,31 +209,26 @@ class Painter extends React.PureComponent<Props> {
       this.moveStart.x = event.offsetX;
       this.moveStart.y = event.offsetY;
       this.requestRenderFrame();
-      return;
-    }
-    if (!this.pointerIsDown) {
-      return;
-    }
-    if (this.isEraseButtonDown(event)) {
+    } else if (action === Action.Erase) {
       this.eraseLine(event);
-      return;
-    }
-    const coalescedEvents =
-      typeof event.getCoalescedEvents !== "undefined"
-        ? event.getCoalescedEvents()
-        : [];
-    if (coalescedEvents.length > 0) {
-      for (const e of coalescedEvents) {
-        this.handleOnPointerMove(e);
+    } else if (action === Action.Draw) {
+      const coalescedEvents =
+        typeof event.getCoalescedEvents !== "undefined"
+          ? event.getCoalescedEvents()
+          : [];
+      if (coalescedEvents.length > 0) {
+        for (const e of coalescedEvents) {
+          this.handleOnPointerMove(e);
+        }
+        return;
       }
-      return;
+
+      const curX = event.offsetX;
+      const curY = event.offsetY;
+      const point = new Point(curX, curY, event.pressure);
+
+      this.addPoint(point);
     }
-
-    const curX = event.offsetX;
-    const curY = event.offsetY;
-    const point = new Point(curX, curY, event.pressure);
-
-    this.addPoint(point);
   };
 
   requestRenderFrame = () => {

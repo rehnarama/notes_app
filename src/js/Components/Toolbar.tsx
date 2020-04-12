@@ -8,8 +8,12 @@ import FeltPen from "../Pen/FeltPen";
 interface Props {
   onColorChange?: PickFunction;
   onThicknessChange?: (thickness: number) => void;
+  onAlwaysDrawChange?: (alwaysDraw: boolean) => void;
+  onEraseChange?: (erase: boolean) => void;
   thickness: number;
   color: Color;
+  alwaysDraw: boolean;
+  erase: boolean;
 }
 
 const Toolbar: React.SFC<Props> = props => {
@@ -41,6 +45,13 @@ const Toolbar: React.SFC<Props> = props => {
     }
   }, [props.color, props.thickness, previewRenderer.current]);
 
+  const onAlwaysDrawChange: React.ChangeEventHandler<HTMLInputElement> = e => {
+    props.onAlwaysDrawChange?.(e.currentTarget.checked);
+  };
+  const onEraseChange: React.ChangeEventHandler<HTMLInputElement> = e => {
+    props.onEraseChange?.(e.currentTarget.checked);
+  };
+
   return (
     <div className={classes.container}>
       <ColorPicker onPick={props.onColorChange} />
@@ -59,6 +70,20 @@ const Toolbar: React.SFC<Props> = props => {
         }}
         ref={attachRenderer}
       />
+      <input
+        type="checkbox"
+        checked={props.alwaysDraw}
+        id="mode-alwaysdraw"
+        onChange={onAlwaysDrawChange}
+      />
+      <label htmlFor="mode-alwaysdraw">Draw</label>
+      <input
+        type="checkbox"
+        checked={props.erase}
+        id="mode-erase"
+        onChange={onEraseChange}
+      />
+      <label htmlFor="mode-erase">Erase</label>
     </div>
   );
 };
