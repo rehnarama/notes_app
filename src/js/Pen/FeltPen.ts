@@ -1,10 +1,11 @@
 import Pen from "./Pen";
-import { Line } from "../LineGenerator";
+import { Line } from "../Lines/LineGenerator";
+import { getPointRadius, generateCircleVertices } from "./PenUtils";
 
 const MAX_ANGLE = 0.5;
 
-export default class FeltPen extends Pen {
-  public generateVertices(
+const FeltPen: Pen = {
+  generateAttributeData(
     lineData: Line
   ): { vertices: number[]; colors: number[] } {
     const line = lineData.points;
@@ -47,8 +48,8 @@ export default class FeltPen extends Pen {
       let perpX = Math.cos(perp);
       let perpY = Math.sin(perp);
 
-      const pointRadius = this.getPointRadius(point) * lineData.thickness;
-      const oldPointRadius = this.getPointRadius(oldPoint) * lineData.thickness;
+      const pointRadius = getPointRadius(point) * lineData.thickness;
+      const oldPointRadius = getPointRadius(oldPoint) * lineData.thickness;
 
       let A = {
         x: oldPoint.x + perpX * oldPointRadius,
@@ -88,8 +89,8 @@ export default class FeltPen extends Pen {
       oldPoint = point;
     }
 
-    const firstBall = this.generateCircleVertices(line[0], lineData.thickness);
-    const lastBall = this.generateCircleVertices(
+    const firstBall = generateCircleVertices(line[0], lineData.thickness);
+    const lastBall = generateCircleVertices(
       line[line.length - 1],
       lineData.thickness
     );
@@ -112,4 +113,5 @@ export default class FeltPen extends Pen {
 
     return { vertices: meshPoints, colors };
   }
-}
+};
+export default FeltPen;

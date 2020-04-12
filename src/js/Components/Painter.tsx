@@ -60,8 +60,7 @@ class Painter extends React.PureComponent<Props, State> {
 
   isDirty = false;
 
-  pen: Pen = new FeltPen();
-  lineGenerator = new LineGenerator(this.pen);
+  lineGenerator = new LineGenerator(FeltPen);
   lineRenderer: LineRenderer | null = null;
   targetRef = React.createRef<HTMLDivElement>();
 
@@ -305,7 +304,7 @@ class Painter extends React.PureComponent<Props, State> {
       return;
     }
 
-    const generator = new LineGenerator(this.pen);
+    const generator = new LineGenerator(FeltPen);
     generator.addLine(0, {
       points: [
         { pressure: 0.8, x: 10, y: 20 },

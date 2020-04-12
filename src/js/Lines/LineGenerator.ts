@@ -1,5 +1,4 @@
 import interpolateLine from "./LineInterpolation";
-import { clamp } from "../utils";
 import Pen from "../Pen/Pen";
 import { LineId } from "./Lines";
 import { Color } from "./LineRenderer";
@@ -46,14 +45,14 @@ export default class LineGenerator {
       color: line.color,
       thickness: line.thickness
     };
-    const vertices = this.pen.generateVertices(interpolatedLine);
+    const attrData = this.pen.generateAttributeData(interpolatedLine);
     this.isDirty = this.lineVertices.has(id); // Since we have to clear the old vertices in this case...
-    this.lineVertices.set(id, vertices);
+    this.lineVertices.set(id, attrData);
 
     if (!this.isDirty) {
       // If we're dirty, then this will be cleared anyway, so might as well not do it at all
-      this.vertices.push(...vertices.vertices);
-      this.colors.push(...vertices.colors);
+      this.vertices.push(...attrData.vertices);
+      this.colors.push(...attrData.colors);
     }
   }
 
