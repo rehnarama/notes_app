@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Color } from "./LineRenderer";
+import { Color } from "../Lines/LineRenderer";
 
 function colorToRgba(color: Color) {
   return `rgba(${color[0] * 255}, ${color[1] * 255}, ${color[2] * 255}, ${

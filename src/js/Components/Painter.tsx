@@ -1,10 +1,10 @@
 import * as React from "react";
-import LineGenerator from "./LineGenerator";
-import LineRenderer, { Color } from "./LineRenderer";
-import FeltPen from "./Pen/FeltPen";
-import Pen from "./Pen/Pen";
+import LineGenerator from "../Lines/LineGenerator";
+import LineRenderer, { Color } from "../Lines/LineRenderer";
+import FeltPen from "../Pen/FeltPen";
+import Pen from "../Pen/Pen";
 import { FullMeshNetwork, TaggedCausalStableBroadcast as TCSB } from "network";
-import Lines from "./Lines";
+import Lines from "../Lines/Lines";
 import ColorPicker from "./ColorPicker";
 
 const fmn = new FullMeshNetwork("wss://rehnarama-notes.glitch.me");

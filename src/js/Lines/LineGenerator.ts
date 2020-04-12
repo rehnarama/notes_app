@@ -1,6 +1,6 @@
 import interpolateLine from "./LineInterpolation";
-import { clamp } from "./utils";
-import Pen from "./Pen/Pen";
+import { clamp } from "../utils";
+import Pen from "../Pen/Pen";
 import { LineId } from "./Lines";
 import { Color } from "./LineRenderer";
 

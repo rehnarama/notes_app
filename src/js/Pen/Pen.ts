@@ -1,5 +1,5 @@
-import { Line, Point } from "../LineGenerator";
-import { Color } from "../LineRenderer";
+import { Line, Point } from "../Lines/LineGenerator";
+import { Color } from "../Lines/LineRenderer";
 
 const CIRCLE_VERTICE_PER_PIXEL = 0.5;
 const DEFAULT_LINE_WIDTH = 1;

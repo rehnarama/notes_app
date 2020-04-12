@@ -2,7 +2,7 @@ import "regenerator-runtime";
 import * as React from "react";
 import { render } from "react-dom";
 
-import App from "./App";
+import App from "./Components/App";
 
 import "../style/main.scss";
 
