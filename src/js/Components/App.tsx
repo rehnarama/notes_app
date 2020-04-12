@@ -1,30 +1,26 @@
 import * as React from "react";
 import Painter, { Line, Point } from "./Painter";
-import PenPicker from "./PenPicker";
+import { Color } from "../Lines/LineRenderer";
+import Toolbar from "./Toolbar";
+import classes from "./App.module.css";
 
-const LINES_KEY = "lines";
+const App: React.SFC = () => {
+  const [color, setColor] = React.useState<Color>([0, 0, 0, 1]);
+  const [thickness, setThickness] = React.useState(1);
 
-class App extends React.Component {
-  lastKey: string = "";
-  savedLines: Line[] = (JSON.parse(
-    localStorage.getItem(LINES_KEY) || "[]"
-  ) as Line[]).map(line => line.map(p => new Point(p.x, p.y, p.pressure)));
-
-  handleOnPainterSave = (lines: Line[]) => {
-    localStorage.setItem(LINES_KEY, JSON.stringify(lines));
-  };
-
-  render() {
-    return (
-      <React.Fragment>
-        {/* <PenPicker /> */}
-        <Painter
-          initialLineData={this.savedLines}
-          onSaveImage={this.handleOnPainterSave}
+  return (
+    <main className={classes.main}>
+      <header>
+        <Toolbar
+          onColorChange={setColor}
+          onThicknessChange={setThickness}
+          thickness={thickness}
+          color={color}
         />
-      </React.Fragment>
-    );
-  }
-}
+      </header>
+      <Painter color={color} thickness={thickness} />
+    </main>
+  );
+};
 
 export default App;

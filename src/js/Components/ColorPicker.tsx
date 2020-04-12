@@ -9,7 +9,7 @@ function colorToRgba(color: Color) {
 
 export type PickFunction = (color: Color) => void;
 
-const ColorButton: React.SFC<{ color: Color; onPick: PickFunction }> = ({
+const ColorButton: React.SFC<{ color: Color; onPick?: PickFunction }> = ({
   color,
   onPick
 }) => {
@@ -23,12 +23,12 @@ const ColorButton: React.SFC<{ color: Color; onPick: PickFunction }> = ({
         marginRight: 4,
         border: "2px solid black"
       }}
-      onClick={() => onPick(color)}
+      onClick={() => onPick?.(color)}
     />
   );
 };
 
-const ColorPicker: React.SFC<{ onPick: PickFunction }> = ({ onPick }) => {
+const ColorPicker: React.SFC<{ onPick?: PickFunction }> = ({ onPick }) => {
   return (
     <div
       style={{

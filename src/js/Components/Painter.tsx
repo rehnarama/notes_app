@@ -2,7 +2,6 @@ import * as React from "react";
 import LineGenerator from "../Lines/LineGenerator";
 import LineRenderer, { Color } from "../Lines/LineRenderer";
 import FeltPen from "../Pen/FeltPen";
-import Pen from "../Pen/Pen";
 import { FullMeshNetwork, TaggedCausalStableBroadcast as TCSB } from "network";
 import Lines from "../Lines/Lines";
 import ColorPicker from "./ColorPicker";
@@ -40,16 +39,11 @@ export { Point, Line };
 type PointerEventHandler = (event: PointerEvent) => void;
 
 interface Props {
-  onSaveImage: (lines: Line[]) => void;
-  initialLineData?: Line[];
-}
-
-interface State {
   color: Color;
   thickness: number;
 }
 
-class Painter extends React.PureComponent<Props, State> {
+class Painter extends React.PureComponent<Props> {
   previousPoint?: Point;
 
   isMoving = false;
@@ -64,15 +58,8 @@ class Painter extends React.PureComponent<Props, State> {
   lineRenderer: LineRenderer | null = null;
   targetRef = React.createRef<HTMLDivElement>();
 
-  previewRef = React.createRef<HTMLDivElement>();
-  previewRenderer: LineRenderer | null = null;
-
   constructor(props: Props) {
     super(props);
-    this.state = {
-      color: [0, 0, 0, 1],
-      thickness: 1
-    };
 
     lines.onChange.add(msg => {
       if (msg.name === "add") {
@@ -88,15 +75,12 @@ class Painter extends React.PureComponent<Props, State> {
   }
 
   componentDidMount() {
-    if (this.targetRef.current === null || this.previewRef.current === null) {
+    if (this.targetRef.current === null) {
       throw new Error("Could not find target element");
     }
 
     this.lineRenderer = new LineRenderer(this.targetRef.current);
     this.requestRenderFrame();
-
-    this.previewRenderer = new LineRenderer(this.previewRef.current);
-    this.renderPreview();
 
     this.targetRef.current.addEventListener(
       "pointermove",
@@ -153,10 +137,6 @@ class Painter extends React.PureComponent<Props, State> {
       this.lineRenderer.updateSize();
       this.requestRenderFrame();
     }
-    if (this.previewRenderer !== null) {
-      this.previewRenderer.updateSize();
-      this.renderPreview();
-    }
   };
 
   isEraseButtonDown = ({
@@ -175,16 +155,16 @@ class Painter extends React.PureComponent<Props, State> {
   handleOnPointerDown: PointerEventHandler = event => {
     if (event.pointerType === "touch") {
       this.isMoving = true;
-      this.moveStart.x = event.clientX;
-      this.moveStart.y = event.clientY;
+      this.moveStart.x = event.offsetX;
+      this.moveStart.y = event.offsetY;
       return;
     }
 
     this.pointerIsDown = true;
 
     if (!this.isEraseButtonDown(event)) {
-      lines.beginLine(this.state.color, this.state.thickness);
-      const point = new Point(event.clientX, event.clientY, event.pressure);
+      lines.beginLine(this.props.color, this.props.thickness);
+      const point = new Point(event.offsetX, event.offsetY, event.pressure);
 
       this.addPoint(point);
     }
@@ -201,8 +181,8 @@ class Painter extends React.PureComponent<Props, State> {
     }
 
     const point = new Point(
-      event.clientX - this.lineRenderer.position.x,
-      event.clientY - this.lineRenderer.position.y
+      event.offsetX - this.lineRenderer.position.x,
+      event.offsetY - this.lineRenderer.position.y
     );
 
     const allLines = lines.getLines();
@@ -223,12 +203,12 @@ class Painter extends React.PureComponent<Props, State> {
 
   handleOnPointerMove: PointerEventHandler = event => {
     if (this.isMoving && this.lineRenderer) {
-      const deltaX = this.moveStart.x - event.clientX;
-      const deltaY = this.moveStart.y - event.clientY;
+      const deltaX = this.moveStart.x - event.offsetX;
+      const deltaY = this.moveStart.y - event.offsetY;
       this.lineRenderer.position.x -= deltaX;
       this.lineRenderer.position.y -= deltaY;
-      this.moveStart.x = event.clientX;
-      this.moveStart.y = event.clientY;
+      this.moveStart.x = event.offsetX;
+      this.moveStart.y = event.offsetY;
       this.requestRenderFrame();
       return;
     }
@@ -250,8 +230,8 @@ class Painter extends React.PureComponent<Props, State> {
       return;
     }
 
-    const curX = event.clientX;
-    const curY = event.clientY;
+    const curX = event.offsetX;
+    const curY = event.offsetY;
     const point = new Point(curX, curY, event.pressure);
 
     this.addPoint(point);
@@ -299,76 +279,13 @@ class Painter extends React.PureComponent<Props, State> {
     this.isDirty = false;
   };
 
-  renderPreview = () => {
-    if (this.previewRenderer === null) {
-      return;
-    }
-
-    const generator = new LineGenerator(FeltPen);
-    generator.addLine(0, {
-      points: [
-        { pressure: 0.8, x: 10, y: 20 },
-        { pressure: 0.6, x: 60, y: 60 },
-        { pressure: 0.5, x: 70, y: 20 },
-        { pressure: 0.2, x: 140, y: 60 }
-      ],
-      color: this.state.color,
-      thickness: this.state.thickness
-    });
-
-    const data = generator.generateData();
-    this.previewRenderer.draw(data.vertices, data.color);
-  };
-
-  getX = () => {
-    return Math.random() * window.innerWidth;
-  };
-  getY = () => {
-    return Math.random() * window.innerHeight;
-  };
-
-  clear = () => {
-    this.requestRenderFrame();
-  };
-
-  onPick = (color: Color) => {
-    this.setState(
-      {
-        color
-      },
-      this.renderPreview
-    );
-  };
-
-  onThicknessChange: React.ChangeEventHandler<HTMLInputElement> = e => {
-    this.setState(
-      {
-        thickness: e.currentTarget.valueAsNumber
-      },
-      this.renderPreview
-    );
-  };
-
-  goLeft = () => {
-    if (this.lineRenderer) {
-      this.lineRenderer.position.x -= 10;
-    }
-    this.requestRenderFrame();
-  };
-  goRight = () => {
-    if (this.lineRenderer) {
-      this.lineRenderer.position.x += 10;
-    }
-    this.requestRenderFrame();
-  };
-
   onScroll: React.WheelEventHandler = e => {
     if (this.lineRenderer) {
       if (e.ctrlKey) {
         let zoomDelta = -e.deltaY * 0.03;
 
-        const x = e.clientX / this.lineRenderer.zoom;
-        const y = e.clientY / this.lineRenderer.zoom;
+        const x = e.nativeEvent.offsetX / this.lineRenderer.zoom;
+        const y = e.nativeEvent.offsetY / this.lineRenderer.zoom;
 
         this.lineRenderer.setZoom(this.lineRenderer.zoom + zoomDelta, { x, y });
       } else if (e.shiftKey) {
@@ -384,50 +301,14 @@ class Painter extends React.PureComponent<Props, State> {
 
   render() {
     return (
-      <React.Fragment>
-        <div
-          ref={this.targetRef}
-          style={{
-            left: 0,
-            top: 0,
-            width: "100vw",
-            height: "100vh",
-            touchAction: "none",
-            overflow: "hidden"
-          }}
-          onWheel={this.onScroll}
-        />
-        <div
-          style={{
-            position: "fixed",
-            left: 0,
-            top: 0,
-            right: 0,
-            height: 64,
-            background: "white",
-            display: "flex",
-            alignItems: "center",
-            boxShadow: "0 0 8px rgba(0,0,0,0.4)"
-          }}
-        >
-          <ColorPicker onPick={this.onPick} />
-          <input
-            type="range"
-            min="0.1"
-            max="3"
-            step="0.2"
-            value={this.state.thickness}
-            onChange={this.onThicknessChange}
-          ></input>
-          <div
-            ref={this.previewRef}
-            style={{
-              width: 200,
-              height: "100%"
-            }}
-          />
-        </div>
-      </React.Fragment>
+      <div
+        ref={this.targetRef}
+        style={{
+          touchAction: "none",
+          overflow: "hidden"
+        }}
+        onWheel={this.onScroll}
+      />
     );
   }
 }
