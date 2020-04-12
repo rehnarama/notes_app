@@ -4,7 +4,6 @@ import { LineId } from "./Lines";
 import { Color } from "./LineRenderer";
 
 const DEFAULT_PRESSURE = 0.5;
-const MIN_REMOVE_DISTANCE = 10;
 
 class Point {
   x: number;

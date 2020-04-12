@@ -1,5 +1,5 @@
 import * as React from "react";
-import LineGenerator from "../Lines/LineGenerator";
+import LineGenerator, { Point } from "../Lines/LineGenerator";
 import LineRenderer, { Color } from "../Lines/LineRenderer";
 import FeltPen from "../Pen/FeltPen";
 import Lines from "../Lines/Lines";
@@ -9,23 +9,6 @@ const MIN_DISTANCE = 6;
 // Default pressure is treated as
 // pressure not supported, as per spec: https://www.w3.org/TR/pointerevents/
 const DEFAULT_PRESSURE = 0.5;
-
-class Point {
-  x: number;
-  y: number;
-  pressure: number;
-  constructor(x: number, y: number, pressure?: number) {
-    this.x = x;
-    this.y = y;
-    this.pressure = pressure || DEFAULT_PRESSURE;
-  }
-
-  equals(other: Point) {
-    return this.x === other.x && this.y === other.y;
-  }
-}
-type Line = Point[];
-export { Point, Line };
 
 type PointerEventHandler = (event: PointerEvent) => void;
 
