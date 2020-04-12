@@ -361,6 +361,19 @@ class Painter extends React.PureComponent<Props, State> {
     this.requestRenderFrame();
   };
 
+  onScroll: React.WheelEventHandler = e => {
+    if (this.lineRenderer) {
+      if (e.shiftKey) {
+        this.lineRenderer.position.x += e.deltaY;
+      } else {
+        this.lineRenderer.position.x += e.deltaX;
+        this.lineRenderer.position.y += e.deltaY;
+      }
+      this.requestRenderFrame();
+    }
+    e.preventDefault();
+  };
+
   render() {
     return (
       <React.Fragment>
@@ -374,6 +387,7 @@ class Painter extends React.PureComponent<Props, State> {
             touchAction: "none",
             overflow: "hidden"
           }}
+          onWheel={this.onScroll}
         />
         <div
           style={{
