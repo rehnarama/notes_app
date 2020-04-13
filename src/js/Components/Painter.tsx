@@ -139,17 +139,17 @@ class Painter extends React.PureComponent<Props> {
     return ((button === 5 || button === -1) && buttons === 32) || buttons === 2; // 2 is right-click
   };
 
-  private guessAction = (event: PointerEvent): Action | null => {
+  private guessPointerAction = (event: PointerEvent): Action | null => {
     let action: Action | null = null;
-    if (event.pointerType === "touch") {
-      action = Action.Move;
-    } else if (
+    if (
       (this.isEraseButton(event) && this.drawPointerIsDown) ||
       (this.props.erase && this.drawPointerIsDown)
     ) {
       action = Action.Erase;
     } else if (this.drawPointerIsDown) {
       action = Action.Draw;
+    } else if (event.pointerType === "touch") {
+      action = Action.Move;
     }
 
     return action;
@@ -162,7 +162,7 @@ class Painter extends React.PureComponent<Props> {
   handleOnPointerDown: PointerEventHandler = event => {
     this.drawPointerIsDown = this.isDrawPointer(event);
 
-    const action = this.guessAction(event);
+    const action = this.guessPointerAction(event);
 
     if (action === Action.Move) {
       this.moveStart.x = event.offsetX;
@@ -206,7 +206,7 @@ class Painter extends React.PureComponent<Props> {
   };
 
   handleOnPointerMove: PointerEventHandler = event => {
-    const action = this.guessAction(event);
+    const action = this.guessPointerAction(event);
 
     if (action === Action.Move && this.lineRenderer) {
       const deltaX = this.moveStart.x - event.offsetX;
