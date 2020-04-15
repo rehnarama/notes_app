@@ -18,8 +18,8 @@ interface Props {
   color: Color;
   thickness: number;
   lines: Lines;
-  alwaysDraw?: boolean;
-  erase?: boolean;
+  cursorMode?: boolean;
+  eraseMode?: boolean;
 }
 
 class Painter extends React.PureComponent<Props> {
@@ -79,11 +79,11 @@ class Painter extends React.PureComponent<Props> {
   private handleOnPan = (e: PanEvent) => {
     if (this.lineRenderer) {
       if (
-        (this.props.alwaysDraw && e.pointerType !== "scroll") ||
+        (this.props.cursorMode && e.pointerType !== "scroll") ||
         e.pointerType === "pen"
       ) {
         const point = new Point(e.position.x, e.position.y, e.pressure);
-        if (this.isEraseButtons(e.buttons) || this.props.erase) {
+        if (this.isEraseButtons(e.buttons) || this.props.eraseMode) {
           this.eraseLine(point);
         } else {
           this.addPoint(point);
@@ -98,9 +98,9 @@ class Painter extends React.PureComponent<Props> {
 
   private handleOnDown = (e: DownEvent) => {
     if (this.lineRenderer) {
-      if (this.props.alwaysDraw || e.pointerType === "pen") {
+      if (this.props.cursorMode || e.pointerType === "pen") {
         const point = new Point(e.position.x, e.position.y, e.pressure);
-        if (this.isEraseButtons(e.buttons) || this.props.erase) {
+        if (this.isEraseButtons(e.buttons) || this.props.eraseMode) {
           this.eraseLine(point);
         } else {
           this.props.lines.beginLine(this.props.color, this.props.thickness);
@@ -113,14 +113,16 @@ class Painter extends React.PureComponent<Props> {
 
   private handleOnZoom = (e: ZoomEvent) => {
     if (this.lineRenderer) {
-      this.lineRenderer.setZoom(
-        this.lineRenderer.zoom + e.delta * 0.008 * this.lineRenderer.zoom,
-        {
-          x: e.around.x / this.lineRenderer.zoom,
-          y: e.around.y / this.lineRenderer.zoom
-        }
-      );
-      this.requestRenderFrame();
+      if (!(this.props.cursorMode && e.method === "pinch")) {
+        this.lineRenderer.setZoom(
+          this.lineRenderer.zoom + e.delta * 0.008 * this.lineRenderer.zoom,
+          {
+            x: e.around.x / this.lineRenderer.zoom,
+            y: e.around.y / this.lineRenderer.zoom
+          }
+        );
+        this.requestRenderFrame();
+      }
     }
   };
 

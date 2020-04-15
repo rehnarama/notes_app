@@ -10,8 +10,8 @@ const fmn = new FullMeshNetwork("wss://rehnarama-notes.glitch.me");
 const lines = new Lines(fmn);
 
 const App: React.SFC = () => {
-  const [alwaysDraw, setAlwaysDraw] = React.useState(true);
-  const [erase, setErase] = React.useState(false);
+  const [cursorMode, setCursorMode] = React.useState(true);
+  const [eraseMode, setEraseMode] = React.useState(false);
   const [color, setColor] = React.useState<Color>([0, 0, 0, 1]);
   const [thickness, setThickness] = React.useState(1);
 
@@ -21,20 +21,20 @@ const App: React.SFC = () => {
         <Toolbar
           onColorChange={setColor}
           onThicknessChange={setThickness}
-          onAlwaysDrawChange={setAlwaysDraw}
-          onEraseChange={setErase}
+          onCursorModeChange={setCursorMode}
+          onEraseModeChange={setEraseMode}
           thickness={thickness}
           color={color}
-          erase={erase}
-          alwaysDraw={alwaysDraw}
+          eraseMode={eraseMode}
+          cursorMode={cursorMode}
         />
       </header>
       <Painter
         color={color}
         thickness={thickness}
         lines={lines}
-        erase={erase}
-        alwaysDraw={alwaysDraw}
+        eraseMode={eraseMode}
+        cursorMode={cursorMode}
       />
     </main>
   );

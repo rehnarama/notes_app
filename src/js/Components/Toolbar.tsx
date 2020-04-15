@@ -8,12 +8,12 @@ import FeltPen from "../Pen/FeltPen";
 interface Props {
   onColorChange?: PickFunction;
   onThicknessChange?: (thickness: number) => void;
-  onAlwaysDrawChange?: (alwaysDraw: boolean) => void;
-  onEraseChange?: (erase: boolean) => void;
+  onCursorModeChange?: (alwaysDraw: boolean) => void;
+  onEraseModeChange?: (erase: boolean) => void;
   thickness: number;
   color: Color;
-  alwaysDraw: boolean;
-  erase: boolean;
+  cursorMode: boolean;
+  eraseMode: boolean;
 }
 
 const Toolbar: React.SFC<Props> = props => {
@@ -45,11 +45,11 @@ const Toolbar: React.SFC<Props> = props => {
     }
   }, [props.color, props.thickness, previewRenderer.current]);
 
-  const onAlwaysDrawChange: React.ChangeEventHandler<HTMLInputElement> = e => {
-    props.onAlwaysDrawChange?.(e.currentTarget.checked);
+  const onCursorModeChange: React.ChangeEventHandler<HTMLInputElement> = e => {
+    props.onCursorModeChange?.(e.currentTarget.checked);
   };
-  const onEraseChange: React.ChangeEventHandler<HTMLInputElement> = e => {
-    props.onEraseChange?.(e.currentTarget.checked);
+  const onEraseModeChange: React.ChangeEventHandler<HTMLInputElement> = e => {
+    props.onEraseModeChange?.(e.currentTarget.checked);
   };
 
   return (
@@ -72,18 +72,18 @@ const Toolbar: React.SFC<Props> = props => {
       />
       <input
         type="checkbox"
-        checked={props.alwaysDraw}
-        id="mode-alwaysdraw"
-        onChange={onAlwaysDrawChange}
+        checked={props.cursorMode}
+        id="mode-cursor"
+        onChange={onCursorModeChange}
       />
-      <label htmlFor="mode-alwaysdraw">Draw</label>
+      <label htmlFor="mode-cursor">Cursor Mode</label>
       <input
         type="checkbox"
-        checked={props.erase}
+        checked={props.eraseMode}
         id="mode-erase"
-        onChange={onEraseChange}
+        onChange={onEraseModeChange}
       />
-      <label htmlFor="mode-erase">Erase</label>
+      <label htmlFor="mode-erase">Erase Mode</label>
     </div>
   );
 };
