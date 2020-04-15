@@ -121,7 +121,7 @@ class Painter extends React.PureComponent<Props> {
 
   private handleOnZoom = (e: ZoomEvent) => {
     if (this.lineRenderer) {
-      this.lineRenderer.setZoom(this.lineRenderer.zoom + e.delta * 0.01, {
+      this.lineRenderer.setZoom(this.lineRenderer.zoom + e.delta * 0.008 * this.lineRenderer.zoom, {
         x: e.around.x / this.lineRenderer.zoom,
         y: e.around.y / this.lineRenderer.zoom
       });
