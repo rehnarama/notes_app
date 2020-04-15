@@ -110,6 +110,15 @@ export default class GestureRecognizer {
   };
 
   handleOnPointerMove = (e: PointerEvent) => {
+    const coalescedEvents =
+      typeof e.getCoalescedEvents !== "undefined" ? e.getCoalescedEvents() : [];
+    if (coalescedEvents.length > 0) {
+      for (const e of coalescedEvents) {
+        this.handleOnPointerMove(e);
+      }
+      return;
+    }
+
     if (this.pointerMap.has(e.pointerId)) {
       this.pointerMap.set(e.pointerId, {
         x: e.offsetX,
