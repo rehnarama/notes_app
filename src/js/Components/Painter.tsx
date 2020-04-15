@@ -164,8 +164,8 @@ class Painter extends React.PureComponent<Props> {
     }
 
     const realPoint = new Point(
-      point.x - this.lineRenderer.position.x,
-      point.y - this.lineRenderer.position.y
+      (point.x - this.lineRenderer.position.x) / this.lineRenderer.zoom,
+      (point.y - this.lineRenderer.position.y) / this.lineRenderer.zoom
     );
 
     const allLines = this.props.lines.getLines();
