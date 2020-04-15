@@ -3,6 +3,7 @@ import LineGenerator, { Point } from "../Lines/LineGenerator";
 import LineRenderer, { Color } from "../Lines/LineRenderer";
 import FeltPen from "../Pen/FeltPen";
 import Lines from "../Lines/Lines";
+import GestureRecognizer from "../GestureRecognizer";
 
 const MIN_REMOVE_DISTANCE = 10;
 const MIN_DISTANCE = 6;
@@ -41,6 +42,8 @@ class Painter extends React.PureComponent<Props> {
   lineRenderer: LineRenderer | null = null;
   targetRef = React.createRef<HTMLDivElement>();
 
+  gestureRecognizer: GestureRecognizer | null = null;
+
   constructor(props: Props) {
     super(props);
 
@@ -65,21 +68,49 @@ class Painter extends React.PureComponent<Props> {
     this.lineRenderer = new LineRenderer(this.targetRef.current);
     this.requestRenderFrame();
 
-    this.targetRef.current.addEventListener(
-      "pointermove",
-      this.handleOnPointerMove,
-      { passive: true }
-    );
-    this.targetRef.current.addEventListener(
-      "pointerdown",
-      this.handleOnPointerDown,
-      { passive: true }
-    );
-    this.targetRef.current.addEventListener(
-      "pointerup",
-      this.handleOnPointerUp,
-      { passive: true }
-    );
+    this.gestureRecognizer = new GestureRecognizer(this.targetRef.current);
+    this.gestureRecognizer.onPinch.add(e => {
+      if (this.lineRenderer) {
+        this.lineRenderer.setZoom(this.lineRenderer.zoom + e.delta * 0.01, {
+          x: e.around.x / this.lineRenderer.zoom,
+          y: e.around.y / this.lineRenderer.zoom
+        });
+        this.requestRenderFrame();
+      }
+    });
+    this.gestureRecognizer.onDown.add(e => {
+      if (this.lineRenderer) {
+        if (this.props.alwaysDraw || e.pointerType === "pen") {
+          const point = new Point(e.position.x, e.position.y, e.pressure);
+          if (this.isEraseButtons(e.buttons) || this.props.erase) {
+            this.eraseLine(point);
+          } else {
+            this.props.lines.beginLine(this.props.color, this.props.thickness);
+            this.addPoint(point);
+          }
+          this.requestRenderFrame();
+        }
+      }
+    });
+
+    this.gestureRecognizer.onPan.add(e => {
+      if (this.lineRenderer) {
+        console.log(e.pointerType)
+        if (this.props.alwaysDraw || e.pointerType === "pen") {
+          const point = new Point(e.position.x, e.position.y, e.pressure);
+          if (this.isEraseButtons(e.buttons) || this.props.erase) {
+            this.eraseLine(point);
+          } else {
+            this.addPoint(point);
+          }
+        } else if (e.pointerType === "touch") {
+          this.lineRenderer.position.x += e.delta.x;
+          this.lineRenderer.position.y += e.delta.y;
+        }
+        this.requestRenderFrame();
+      }
+    });
+
     this.targetRef.current.addEventListener(
       "contextmenu",
       this.handleOnContextMenu
@@ -94,19 +125,9 @@ class Painter extends React.PureComponent<Props> {
   componentWillUnmount() {
     window.removeEventListener("resize", this.handleOnResize);
 
+    this.gestureRecognizer?.dispose();
+
     if (this.targetRef.current !== null) {
-      this.targetRef.current.removeEventListener(
-        "pointermove",
-        this.handleOnPointerMove
-      );
-      this.targetRef.current.removeEventListener(
-        "pointerdown",
-        this.handleOnPointerDown
-      );
-      this.targetRef.current.removeEventListener(
-        "pointerup",
-        this.handleOnPointerUp
-      );
       this.targetRef.current.removeEventListener(
         "contextmenu",
         this.handleOnContextMenu
@@ -126,74 +147,26 @@ class Painter extends React.PureComponent<Props> {
     }
   };
 
-  isEraseButton = ({
-    button,
-    buttons
-  }: {
-    button: number;
-    buttons: number;
-  }) => {
-    // This is the combination of having erase button down
+  isEraseButtons = (buttons: number) => {
     // See https://developer.mozilla.org/en-US/docs/Web/API/Pointer_events#Determining_button_states
-    // button -1 happens when moving with erase down, though this seems to be undocumented
-    return ((button === 5 || button === -1) && buttons === 32) || buttons === 2; // 2 is right-click
+    return buttons === 32 || buttons === 2;
   };
 
-  private guessPointerAction = (event: PointerEvent): Action | null => {
-    let action: Action | null = null;
-    if (
-      (this.isEraseButton(event) && this.drawPointerIsDown) ||
-      (this.props.erase && this.drawPointerIsDown)
-    ) {
-      action = Action.Erase;
-    } else if (this.drawPointerIsDown) {
-      action = Action.Draw;
-    } else if (event.pointerType === "touch") {
-      action = Action.Move;
-    }
-
-    return action;
-  };
-
-  private isDrawPointer = (event: PointerEvent) => {
-    return event.pointerType === "pen" || this.props.alwaysDraw === true;
-  };
-
-  handleOnPointerDown: PointerEventHandler = event => {
-    this.drawPointerIsDown = this.isDrawPointer(event);
-
-    const action = this.guessPointerAction(event);
-
-    if (action === Action.Move) {
-      this.moveStart.x = event.offsetX;
-      this.moveStart.y = event.offsetY;
-    } else if (action === Action.Draw) {
-      this.props.lines.beginLine(this.props.color, this.props.thickness);
-      const point = new Point(event.offsetX, event.offsetY, event.pressure);
-
-      this.addPoint(point);
-    }
-  };
-
-  handleOnPointerUp: PointerEventHandler = event => {
-    this.drawPointerIsDown = false;
-  };
-
-  eraseLine: PointerEventHandler = event => {
+  eraseLine = (point: Point) => {
     if (this.lineRenderer === null) {
       return;
     }
 
-    const point = new Point(
-      event.offsetX - this.lineRenderer.position.x,
-      event.offsetY - this.lineRenderer.position.y
+    const realPoint = new Point(
+      point.x - this.lineRenderer.position.x,
+      point.y - this.lineRenderer.position.y
     );
 
     const allLines = this.props.lines.getLines();
     for (const [id, line] of allLines) {
       for (let pointIndex = 0; pointIndex < line.points.length; pointIndex++) {
-        const dx = line.points[pointIndex].x - point.x;
-        const dy = line.points[pointIndex].y - point.y;
+        const dx = line.points[pointIndex].x - realPoint.x;
+        const dy = line.points[pointIndex].y - realPoint.y;
 
         const distSq = dx * dx + dy * dy;
 
@@ -202,39 +175,6 @@ class Painter extends React.PureComponent<Props> {
           this.props.lines.removeLine(id);
         }
       }
-    }
-  };
-
-  handleOnPointerMove: PointerEventHandler = event => {
-    const action = this.guessPointerAction(event);
-
-    if (action === Action.Move && this.lineRenderer) {
-      const deltaX = this.moveStart.x - event.offsetX;
-      const deltaY = this.moveStart.y - event.offsetY;
-      this.lineRenderer.position.x -= deltaX;
-      this.lineRenderer.position.y -= deltaY;
-      this.moveStart.x = event.offsetX;
-      this.moveStart.y = event.offsetY;
-      this.requestRenderFrame();
-    } else if (action === Action.Erase) {
-      this.eraseLine(event);
-    } else if (action === Action.Draw) {
-      const coalescedEvents =
-        typeof event.getCoalescedEvents !== "undefined"
-          ? event.getCoalescedEvents()
-          : [];
-      if (coalescedEvents.length > 0) {
-        for (const e of coalescedEvents) {
-          this.handleOnPointerMove(e);
-        }
-        return;
-      }
-
-      const curX = event.offsetX;
-      const curY = event.offsetY;
-      const point = new Point(curX, curY, event.pressure);
-
-      this.addPoint(point);
     }
   };
 
