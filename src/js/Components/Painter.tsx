@@ -3,22 +3,16 @@ import LineGenerator, { Point } from "../Lines/LineGenerator";
 import LineRenderer, { Color } from "../Lines/LineRenderer";
 import FeltPen from "../Pen/FeltPen";
 import Lines from "../Lines/Lines";
-import GestureRecognizer, { PanEvent, ZoomEvent, DownEvent } from "../GestureRecognizer";
+import GestureRecognizer, {
+  PanEvent,
+  ZoomEvent,
+  DownEvent
+} from "../GestureRecognizer";
 
 const MIN_REMOVE_DISTANCE = 10;
 const MIN_DISTANCE = 6;
 // Default pressure is treated as
 // pressure not supported, as per spec: https://www.w3.org/TR/pointerevents/
-const DEFAULT_PRESSURE = 0.5;
-
-type PointerEventHandler = (event: PointerEvent) => void;
-
-enum Action {
-  Draw,
-  Move,
-  Erase,
-  Select
-}
 
 interface Props {
   color: Color;
@@ -84,24 +78,23 @@ class Painter extends React.PureComponent<Props> {
 
   private handleOnPan = (e: PanEvent) => {
     if (this.lineRenderer) {
-      console.log(e.pointerType);
-      if ((this.props.alwaysDraw && e.pointerType !== "scroll") ||
-        e.pointerType === "pen") {
+      if (
+        (this.props.alwaysDraw && e.pointerType !== "scroll") ||
+        e.pointerType === "pen"
+      ) {
         const point = new Point(e.position.x, e.position.y, e.pressure);
         if (this.isEraseButtons(e.buttons) || this.props.erase) {
           this.eraseLine(point);
-        }
-        else {
+        } else {
           this.addPoint(point);
         }
-      }
-      else if (e.pointerType === "touch" || e.pointerType === "scroll") {
+      } else if (e.pointerType === "touch" || e.pointerType === "scroll") {
         this.lineRenderer.position.x += e.delta.x;
         this.lineRenderer.position.y += e.delta.y;
       }
       this.requestRenderFrame();
     }
-  }
+  };
 
   private handleOnDown = (e: DownEvent) => {
     if (this.lineRenderer) {
@@ -109,25 +102,27 @@ class Painter extends React.PureComponent<Props> {
         const point = new Point(e.position.x, e.position.y, e.pressure);
         if (this.isEraseButtons(e.buttons) || this.props.erase) {
           this.eraseLine(point);
-        }
-        else {
+        } else {
           this.props.lines.beginLine(this.props.color, this.props.thickness);
           this.addPoint(point);
         }
         this.requestRenderFrame();
       }
     }
-  }
+  };
 
   private handleOnZoom = (e: ZoomEvent) => {
     if (this.lineRenderer) {
-      this.lineRenderer.setZoom(this.lineRenderer.zoom + e.delta * 0.008 * this.lineRenderer.zoom, {
-        x: e.around.x / this.lineRenderer.zoom,
-        y: e.around.y / this.lineRenderer.zoom
-      });
+      this.lineRenderer.setZoom(
+        this.lineRenderer.zoom + e.delta * 0.008 * this.lineRenderer.zoom,
+        {
+          x: e.around.x / this.lineRenderer.zoom,
+          y: e.around.y / this.lineRenderer.zoom
+        }
+      );
       this.requestRenderFrame();
     }
-  }
+  };
 
   componentWillUnmount() {
     window.removeEventListener("resize", this.handleOnResize);
