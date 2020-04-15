@@ -3,7 +3,7 @@ import LineGenerator, { Point } from "../Lines/LineGenerator";
 import LineRenderer, { Color } from "../Lines/LineRenderer";
 import FeltPen from "../Pen/FeltPen";
 import Lines from "../Lines/Lines";
-import GestureRecognizer from "../GestureRecognizer";
+import GestureRecognizer, { PanEvent, ZoomEvent, DownEvent } from "../GestureRecognizer";
 
 const MIN_REMOVE_DISTANCE = 10;
 const MIN_DISTANCE = 6;
@@ -69,57 +69,64 @@ class Painter extends React.PureComponent<Props> {
     this.requestRenderFrame();
 
     this.gestureRecognizer = new GestureRecognizer(this.targetRef.current);
-    this.gestureRecognizer.onPinch.add(e => {
-      if (this.lineRenderer) {
-        this.lineRenderer.setZoom(this.lineRenderer.zoom + e.delta * 0.01, {
-          x: e.around.x / this.lineRenderer.zoom,
-          y: e.around.y / this.lineRenderer.zoom
-        });
-        this.requestRenderFrame();
-      }
-    });
-    this.gestureRecognizer.onDown.add(e => {
-      if (this.lineRenderer) {
-        if (this.props.alwaysDraw || e.pointerType === "pen") {
-          const point = new Point(e.position.x, e.position.y, e.pressure);
-          if (this.isEraseButtons(e.buttons) || this.props.erase) {
-            this.eraseLine(point);
-          } else {
-            this.props.lines.beginLine(this.props.color, this.props.thickness);
-            this.addPoint(point);
-          }
-          this.requestRenderFrame();
-        }
-      }
-    });
+    this.gestureRecognizer.onZoom.add(this.handleOnZoom);
+    this.gestureRecognizer.onDown.add(this.handleOnDown);
 
-    this.gestureRecognizer.onPan.add(e => {
-      if (this.lineRenderer) {
-        console.log(e.pointerType)
-        if (this.props.alwaysDraw || e.pointerType === "pen") {
-          const point = new Point(e.position.x, e.position.y, e.pressure);
-          if (this.isEraseButtons(e.buttons) || this.props.erase) {
-            this.eraseLine(point);
-          } else {
-            this.addPoint(point);
-          }
-        } else if (e.pointerType === "touch") {
-          this.lineRenderer.position.x += e.delta.x;
-          this.lineRenderer.position.y += e.delta.y;
-        }
-        this.requestRenderFrame();
-      }
-    });
+    this.gestureRecognizer.onPan.add(this.handleOnPan);
 
     this.targetRef.current.addEventListener(
       "contextmenu",
       this.handleOnContextMenu
     );
-    this.targetRef.current.addEventListener("wheel", this.onWheel, {
-      passive: false
-    });
 
     window.addEventListener("resize", this.handleOnResize);
+  }
+
+  private handleOnPan = (e: PanEvent) => {
+    if (this.lineRenderer) {
+      console.log(e.pointerType);
+      if ((this.props.alwaysDraw && e.pointerType !== "scroll") ||
+        e.pointerType === "pen") {
+        const point = new Point(e.position.x, e.position.y, e.pressure);
+        if (this.isEraseButtons(e.buttons) || this.props.erase) {
+          this.eraseLine(point);
+        }
+        else {
+          this.addPoint(point);
+        }
+      }
+      else if (e.pointerType === "touch" || e.pointerType === "scroll") {
+        this.lineRenderer.position.x += e.delta.x;
+        this.lineRenderer.position.y += e.delta.y;
+      }
+      this.requestRenderFrame();
+    }
+  }
+
+  private handleOnDown = (e: DownEvent) => {
+    if (this.lineRenderer) {
+      if (this.props.alwaysDraw || e.pointerType === "pen") {
+        const point = new Point(e.position.x, e.position.y, e.pressure);
+        if (this.isEraseButtons(e.buttons) || this.props.erase) {
+          this.eraseLine(point);
+        }
+        else {
+          this.props.lines.beginLine(this.props.color, this.props.thickness);
+          this.addPoint(point);
+        }
+        this.requestRenderFrame();
+      }
+    }
+  }
+
+  private handleOnZoom = (e: ZoomEvent) => {
+    if (this.lineRenderer) {
+      this.lineRenderer.setZoom(this.lineRenderer.zoom + e.delta * 0.01, {
+        x: e.around.x / this.lineRenderer.zoom,
+        y: e.around.y / this.lineRenderer.zoom
+      });
+      this.requestRenderFrame();
+    }
   }
 
   componentWillUnmount() {
@@ -132,7 +139,6 @@ class Painter extends React.PureComponent<Props> {
         "contextmenu",
         this.handleOnContextMenu
       );
-      this.targetRef.current.removeEventListener("wheel", this.onWheel);
     }
   }
 
@@ -218,37 +224,6 @@ class Painter extends React.PureComponent<Props> {
     this.lineRenderer.draw(data.vertices, data.color);
 
     this.isDirty = false;
-  };
-
-  private wheelEventToDeltaPixels = (e: WheelEvent) => {
-    if (e.deltaMode === 0) {
-      return { x: e.deltaX / 200, y: e.deltaY / 200 };
-    } else if (e.deltaMode === 1) {
-      return { x: e.deltaX / 3, y: e.deltaY / 3 };
-    } else {
-      return { x: e.deltaX / 800, y: e.deltaY / 800 };
-    }
-  };
-
-  onWheel = (e: WheelEvent) => {
-    const delta = this.wheelEventToDeltaPixels(e);
-    if (this.lineRenderer) {
-      if (e.ctrlKey) {
-        let zoomDelta = -delta.y * 0.1;
-
-        const x = e.offsetX / this.lineRenderer.zoom;
-        const y = e.offsetY / this.lineRenderer.zoom;
-
-        this.lineRenderer.setZoom(this.lineRenderer.zoom + zoomDelta, { x, y });
-      } else if (e.shiftKey) {
-        this.lineRenderer.position.x += (10 * delta.y) / this.lineRenderer.zoom;
-      } else {
-        this.lineRenderer.position.x += (10 * delta.x) / this.lineRenderer.zoom;
-        this.lineRenderer.position.y += (10 * delta.y) / this.lineRenderer.zoom;
-      }
-      this.requestRenderFrame();
-    }
-    e.preventDefault();
   };
 
   render() {

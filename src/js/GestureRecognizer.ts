@@ -1,5 +1,7 @@
 import { Hook } from "./utils";
 
+const SCROLL_MULTIPLIER = 50;
+
 interface Point {
   x: number;
   y: number;
@@ -10,24 +12,24 @@ interface PointerData extends Point {
   buttons: number;
 }
 
-interface PinchEvent {
+export interface ZoomEvent {
   delta: number;
   around: { x: number; y: number };
 }
-interface PanEvent {
+export interface PanEvent {
   delta: { x: number; y: number };
   position: { x: number; y: number };
   pressure: number;
   pointerType: string;
   buttons: number;
 }
-type DownEvent = {
+export type DownEvent = {
   position: { x: number; y: number };
   pressure: number;
   pointerType: string;
   buttons: number;
 };
-type UpEvent = DownEvent;
+export type UpEvent = DownEvent;
 
 export default class GestureRecognizer {
   private element: HTMLElement;
@@ -35,7 +37,7 @@ export default class GestureRecognizer {
   private prevPointerMap = new Map<number, PointerData>();
   private pointerMap = new Map<number, PointerData>();
 
-  public onPinch = new Hook<(e: PinchEvent) => void>();
+  public onZoom = new Hook<(e: ZoomEvent) => void>();
   public onPan = new Hook<(e: PanEvent) => void>();
   public onDown = new Hook<(e: DownEvent) => void>();
   public onUp = new Hook<(e: UpEvent) => void>();
@@ -61,6 +63,9 @@ export default class GestureRecognizer {
     element.addEventListener("pointerleave", this.handleOnPointerUp, {
       passive: true
     });
+    element.addEventListener("wheel", this.handleOnWheel, {
+      passive: false
+    });
   }
   dispose() {
     this.element.removeEventListener("pointermove", this.handleOnPointerMove);
@@ -69,6 +74,7 @@ export default class GestureRecognizer {
     this.element.removeEventListener("pointercancel", this.handleOnPointerUp);
     this.element.removeEventListener("pointerout", this.handleOnPointerUp);
     this.element.removeEventListener("pointerleave", this.handleOnPointerUp);
+    this.element.removeEventListener("wheel", this.handleOnWheel);
   }
 
   handleOnPointerDown = (e: PointerEvent) => {
@@ -167,7 +173,7 @@ export default class GestureRecognizer {
 
       const middle = this.getMiddle(first, second);
 
-      this.onPinch.call({ delta: deltaDistance, around: middle });
+      this.onZoom.call({ delta: deltaDistance, around: middle });
 
       const prevMiddle = this.getMiddle(prevFirst, prevSecond);
       const deltaMiddle = this.getDifference(middle, prevMiddle);
@@ -202,4 +208,46 @@ export default class GestureRecognizer {
       });
     }
   }
+
+  private wheelEventToDeltaPixels = (e: WheelEvent) => {
+    if (e.deltaMode === 0) {
+      return { x: e.deltaX / 200, y: e.deltaY / 200 };
+    } else if (e.deltaMode === 1) {
+      return { x: e.deltaX / 3, y: e.deltaY / 3 };
+    } else {
+      return { x: e.deltaX / 800, y: e.deltaY / 800 };
+    }
+  };
+
+  private handleOnWheel = (e: WheelEvent) => {
+    const delta = this.wheelEventToDeltaPixels(e);
+    if (e.ctrlKey) {
+      let zoomDelta = -delta.y * SCROLL_MULTIPLIER;
+
+      this.onZoom.call({
+        delta: zoomDelta,
+        around: { x: e.offsetX, y: e.offsetY }
+      });
+    } else if (e.shiftKey) {
+      this.onPan.call({
+        delta: { x: SCROLL_MULTIPLIER * delta.y, y: 0 },
+        position: { x: e.offsetX, y: e.offsetY },
+        pressure: NaN,
+        buttons: e.buttons,
+        pointerType: "scroll"
+      });
+    } else {
+      this.onPan.call({
+        delta: {
+          x: SCROLL_MULTIPLIER * delta.x,
+          y: SCROLL_MULTIPLIER * delta.y
+        },
+        position: { x: e.offsetX, y: e.offsetY },
+        pressure: NaN,
+        buttons: e.buttons,
+        pointerType: "scroll"
+      });
+    }
+    e.preventDefault();
+  };
 }
