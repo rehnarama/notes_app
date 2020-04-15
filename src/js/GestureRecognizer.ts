@@ -15,6 +15,7 @@ interface PointerData extends Point {
 export interface ZoomEvent {
   delta: number;
   around: { x: number; y: number };
+  method: "pinch" | "scroll";
 }
 export interface PanEvent {
   delta: { x: number; y: number };
@@ -22,6 +23,7 @@ export interface PanEvent {
   pressure: number;
   pointerType: string;
   buttons: number;
+  isPinch: boolean;
 }
 export type DownEvent = {
   position: { x: number; y: number };
@@ -173,7 +175,11 @@ export default class GestureRecognizer {
 
       const middle = this.getMiddle(first, second);
 
-      this.onZoom.call({ delta: deltaDistance, around: middle });
+      this.onZoom.call({
+        delta: deltaDistance,
+        around: middle,
+        method: "pinch"
+      });
 
       const prevMiddle = this.getMiddle(prevFirst, prevSecond);
       const deltaMiddle = this.getDifference(middle, prevMiddle);
@@ -182,7 +188,8 @@ export default class GestureRecognizer {
         position: middle,
         pointerType: first.type,
         pressure: (first.pressure + second.pressure) / 2,
-        buttons: first.buttons | second.buttons
+        buttons: first.buttons | second.buttons,
+        isPinch: true
       });
     }
   }
@@ -204,7 +211,8 @@ export default class GestureRecognizer {
         position: { x: point.x, y: point.y },
         pointerType: point.type,
         pressure: point.pressure,
-        buttons: point.buttons
+        buttons: point.buttons,
+        isPinch: false
       });
     }
   }
@@ -226,7 +234,8 @@ export default class GestureRecognizer {
 
       this.onZoom.call({
         delta: zoomDelta,
-        around: { x: e.offsetX, y: e.offsetY }
+        around: { x: e.offsetX, y: e.offsetY },
+        method: "scroll"
       });
     } else if (e.shiftKey) {
       this.onPan.call({
@@ -234,7 +243,8 @@ export default class GestureRecognizer {
         position: { x: e.offsetX, y: e.offsetY },
         pressure: NaN,
         buttons: e.buttons,
-        pointerType: "scroll"
+        pointerType: "scroll",
+        isPinch: false
       });
     } else {
       this.onPan.call({
@@ -245,7 +255,8 @@ export default class GestureRecognizer {
         position: { x: e.offsetX, y: e.offsetY },
         pressure: NaN,
         buttons: e.buttons,
-        pointerType: "scroll"
+        pointerType: "scroll",
+        isPinch: false
       });
     }
     e.preventDefault();
