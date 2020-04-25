@@ -55,7 +55,6 @@ export default class LineGenerator {
 
   public removeLine(id: LineId) {
     this.lineVertices.delete(id);
-    // this.oldLineLength.delete(id);
     this.isDirty = true;
   }
 
