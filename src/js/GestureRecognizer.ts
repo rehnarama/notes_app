@@ -1,6 +1,7 @@
 import { Hook } from "./utils";
 
 const SCROLL_MULTIPLIER = 50;
+const TIME_BUDGET = 6;
 
 interface Point {
   x: number;
@@ -113,8 +114,11 @@ export default class GestureRecognizer {
     const coalescedEvents =
       typeof e.getCoalescedEvents !== "undefined" ? e.getCoalescedEvents() : [];
     if (coalescedEvents.length > 0) {
+      const startTime = performance.now();
       for (const e of coalescedEvents) {
-        this.handleOnPointerMove(e);
+        if (performance.now() - startTime < TIME_BUDGET) {
+          this.handleOnPointerMove(e);
+        }
       }
       return;
     }
