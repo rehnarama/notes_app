@@ -262,8 +262,8 @@ export default class GestureRecognizer {
     } else {
       this.onPan.call({
         delta: {
-          x: SCROLL_MULTIPLIER * delta.x,
-          y: SCROLL_MULTIPLIER * delta.y
+          x: SCROLL_MULTIPLIER * -delta.x,
+          y: SCROLL_MULTIPLIER * -delta.y
         },
         position: { x: e.offsetX, y: e.offsetY },
         pressure: NaN,
