@@ -1,5 +1,5 @@
 import interpolateLine from "./LineInterpolation";
-import Pen from "../Pen/Pen";
+import Pen, { AttributeData } from "../Pen/Pen";
 import { LineId } from "./Lines";
 import { Color } from "./LineRenderer";
 
@@ -25,12 +25,9 @@ export { Point, Line };
 export default class LineGenerator {
   private pen: Pen;
 
-  private lineVertices: Map<
-    LineId,
-    { vertices: number[]; colors: number[] }
-  > = new Map();
+  // private oldLineLength: Map<LineId, number> = new Map();
+  private lineVertices: Map<LineId, AttributeData> = new Map();
   private vertices: number[] = [];
-  private colors: number[] = [];
 
   private isDirty = false;
 
@@ -44,34 +41,39 @@ export default class LineGenerator {
       color: line.color,
       thickness: line.thickness
     };
+
     const attrData = this.pen.generateAttributeData(interpolatedLine);
-    this.isDirty = this.lineVertices.has(id); // Since we have to clear the old vertices in this case...
+
+    this.isDirty = this.lineVertices.has(id);
     this.lineVertices.set(id, attrData);
 
     if (!this.isDirty) {
-      // If we're dirty, then this will be cleared anyway, so might as well not do it at all
+      // Since if it's dirty, vertices is gonna be re-generated anyway
       this.vertices.push(...attrData.vertices);
-      this.colors.push(...attrData.colors);
     }
   }
 
   public removeLine(id: LineId) {
     this.lineVertices.delete(id);
+    // this.oldLineLength.delete(id);
     this.isDirty = true;
   }
 
-  public generateData(): { vertices: Float32Array; color: Float32Array } {
+  public generateData(): AttributeData {
     if (this.isDirty) {
-      const lineVertices = Array.from(this.lineVertices.values());
-      this.vertices = ([] as number[]).concat(
-        ...lineVertices.map(a => a.vertices)
-      );
-      this.colors = ([] as number[]).concat(...lineVertices.map(a => a.colors));
+      const data = Array.from(this.lineVertices.values());
+      let counter = 0;
+      for (const attributes of data) {
+        for (const attribute of attributes.vertices) {
+          this.vertices[counter] = attribute;
+          counter++;
+        }
+      }
+      this.vertices.splice(counter, this.vertices.length - counter);
     }
 
     return {
-      vertices: new Float32Array(this.vertices),
-      color: new Float32Array(this.colors)
+      vertices: this.vertices
     };
   }
 }

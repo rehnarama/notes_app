@@ -1,4 +1,5 @@
 import * as twgl from "twgl.js";
+import { AttributeData } from "../Pen/Pen";
 
 export type Color = [number, number, number, number];
 
@@ -36,6 +37,9 @@ export default class LineRenderer {
   public position = { x: 0, y: 0 };
   public zoom: number = 1;
 
+  private indexBuffer: WebGLBuffer | null = null;
+  private vertexBuffer: WebGLBuffer | null = null;
+
   private programInfo: twgl.ProgramInfo | null = null;
   constructor(targetElement: HTMLElement) {
     this.targetElement = targetElement;
@@ -52,6 +56,38 @@ export default class LineRenderer {
     // this.createProgram();
     this.programInfo = twgl.createProgramInfo(this.gl, [vsSource, fsSource]);
     this.gl.useProgram(this.programInfo.program);
+
+    this.vertexBuffer = this.gl.createBuffer();
+    const positionLocation = this.gl.getAttribLocation(
+      this.programInfo.program,
+      "a_position"
+    );
+    const colorLocation = this.gl.getAttribLocation(
+      this.programInfo.program,
+      "a_color"
+    );
+    this.gl.enableVertexAttribArray(colorLocation);
+    this.gl.enableVertexAttribArray(positionLocation);
+    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vertexBuffer);
+    this.gl.vertexAttribPointer(
+      positionLocation,
+      2,
+      this.gl.FLOAT,
+      false,
+      4 * 6,
+      0
+    );
+    this.gl.vertexAttribPointer(
+      colorLocation,
+      4,
+      this.gl.FLOAT,
+      false,
+      4 * 6,
+      4 * 2
+    );
+
+    this.indexBuffer = this.gl.createBuffer();
+
     this.updateSize();
   }
 
@@ -101,38 +137,30 @@ export default class LineRenderer {
     this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
   }
 
-  public draw(vertices: Float32Array, color: Float32Array) {
+  public draw(data: AttributeData) {
     if (this.gl === null || this.programInfo === null) {
       return;
     }
-    if (vertices.length == 0) {
+    if (data.vertices.length == 0) {
       return;
     }
 
-    const bufferInfo = twgl.createBufferInfoFromArrays(
-      this.gl,
-      {
-        position: {
-          numComponents: 2,
-          data: vertices,
-          attribName: "a_position"
-        },
-        color: { data: color, attribName: "a_color" }
-      },
-      {
-        numElements: vertices.length / 2
-      }
-    );
+    this.clear();
 
     this.gl.useProgram(this.programInfo.program);
+
+    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vertexBuffer);
+    this.gl.bufferData(
+      this.gl.ARRAY_BUFFER,
+      new Float32Array(data.vertices),
+      this.gl.STREAM_DRAW
+    );
+
     twgl.setUniforms(this.programInfo, {
       u_position: [this.position.x, this.position.y],
       u_zoom: this.zoom
     });
-    twgl.setBuffersAndAttributes(this.gl, this.programInfo, bufferInfo);
-    twgl.drawBufferInfo(this.gl, bufferInfo, this.gl.TRIANGLE_STRIP);
 
-    // this.gl.bufferData(this.gl.ARRAY_BUFFER, vertices, this.gl.STATIC_DRAW);
-    // this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, vertices.length / 2);
+    this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, data.vertices.length / 6);
   }
 }

@@ -215,10 +215,8 @@ class Painter extends React.PureComponent<Props> {
       return;
     }
 
-    this.lineRenderer.clear();
-
     const data = this.lineGenerator.generateData();
-    this.lineRenderer.draw(data.vertices, data.color);
+    this.lineRenderer.draw(data);
 
     this.isDirty = false;
   };

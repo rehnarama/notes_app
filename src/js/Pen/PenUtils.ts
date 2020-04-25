@@ -1,6 +1,6 @@
 import { Point } from "../Lines/LineGenerator";
 
-const CIRCLE_VERTICE_PER_PIXEL = 1;
+const CIRCLE_VERTICE_PER_PIXEL = 5;
 const DEFAULT_LINE_WIDTH = 1;
 
 export function getPointRadius(point: Point) {
@@ -9,7 +9,11 @@ export function getPointRadius(point: Point) {
   return DEFAULT_LINE_WIDTH + 5 * pointSquare;
 }
 
-export function generateCircleVertices(point: Point, thickness: number = 1) {
+export function generateCircleVertices(
+  point: Point,
+  color: number[],
+  thickness: number = 1
+) {
   const vertices = [];
 
   const radius = getPointRadius(point) * thickness;
@@ -23,11 +27,21 @@ export function generateCircleVertices(point: Point, thickness: number = 1) {
 
     const x2 = radius * Math.cos(theta + dTheta) + point.x;
     const y2 = radius * Math.sin(theta + dTheta) + point.y;
-    vertices.push(x1, y1, point.x, point.y, x2, y2);
+    vertices.push(
+      x1,
+      y1,
+      ...color,
+      point.x,
+      point.y,
+      ...color,
+      x2,
+      y2,
+      ...color
+    );
   }
 
   // Connect to the first vertice to "close" the circle
-  vertices.push(vertices[0], vertices[1]);
+  vertices.push(vertices[0], vertices[1], ...color);
 
   return vertices;
 }

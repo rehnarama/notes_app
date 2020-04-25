@@ -1,16 +1,14 @@
-import Pen from "./Pen";
+import Pen, { AttributeData } from "./Pen";
 import { Line } from "../Lines/LineGenerator";
 import { getPointRadius, generateCircleVertices } from "./PenUtils";
 
 const MAX_ANGLE = 0.5;
 
 const FeltPen: Pen = {
-  generateAttributeData(
-    lineData: Line
-  ): { vertices: number[]; colors: number[] } {
+  generateAttributeData(lineData: Line): AttributeData {
     const line = lineData.points;
     if (line.length === 0) {
-      return { vertices: [], colors: [] };
+      return { vertices: [] };
     }
 
     let oldPoint = null;
@@ -51,27 +49,32 @@ const FeltPen: Pen = {
       const pointRadius = getPointRadius(point) * lineData.thickness;
       const oldPointRadius = getPointRadius(oldPoint) * lineData.thickness;
 
-      let A = {
-        x: oldPoint.x + perpX * oldPointRadius,
-        y: oldPoint.y + perpY * oldPointRadius
-      };
+      let aX = oldPoint.x + perpX * oldPointRadius;
+      let aY = oldPoint.y + perpY * oldPointRadius;
 
-      let B = {
-        x: oldPoint.x - perpX * oldPointRadius,
-        y: oldPoint.y - perpY * oldPointRadius
-      };
+      let bX = oldPoint.x - perpX * oldPointRadius;
+      let bY = oldPoint.y - perpY * oldPointRadius;
 
-      let C = {
-        x: point.x + perpX * pointRadius,
-        y: point.y + perpY * pointRadius
-      };
+      let cX = point.x + perpX * pointRadius;
+      let cY = point.y + perpY * pointRadius;
 
-      let D = {
-        x: point.x - perpX * pointRadius,
-        y: point.y - perpY * pointRadius
-      };
+      let dX = point.x - perpX * pointRadius;
+      let dY = point.y - perpY * pointRadius;
 
-      meshPoints.push(A.x, A.y, B.x, B.y, C.x, C.y, D.x, D.y);
+      meshPoints.push(
+        aX,
+        aY,
+        ...lineData.color,
+        bX,
+        bY,
+        ...lineData.color,
+        cX,
+        cY,
+        ...lineData.color,
+        dX,
+        dY,
+        ...lineData.color
+      );
 
       // Add a rounded line cap
       const minAngle = Math.min(angle, nextAngle);
@@ -81,37 +84,58 @@ const FeltPen: Pen = {
         const perpTheta = theta + Math.PI / 2;
         const x = point.x + sign * Math.cos(perpTheta) * pointRadius;
         const y = point.y + sign * Math.sin(perpTheta) * pointRadius;
-        meshPoints.push(x, y, D.x, D.y);
+        meshPoints.push(
+          x, y, 
+          ...lineData.color, 
+          dX, dY, 
+          ...lineData.color
+        );
       }
       // Add final point to fix the seam
-      meshPoints.push(C.x, C.y, D.x, D.y);
+      meshPoints.push(
+        cX, cY, 
+        ...lineData.color, 
+        dX, dY, 
+        ...lineData.color
+      );
 
       oldPoint = point;
     }
 
-    const firstBall = generateCircleVertices(line[0], lineData.thickness);
+    const firstBall = generateCircleVertices(
+      line[0],
+      lineData.color,
+      lineData.thickness
+    );
     const lastBall = generateCircleVertices(
       line[line.length - 1],
+      lineData.color,
       lineData.thickness
     );
     const n = lastBall.length;
+
     // We add these vertices so that flat triangles
     // are drawn between disjoint objects
-    meshPoints.splice(0, 0, firstBall[0], firstBall[1], ...firstBall);
+    meshPoints.splice(
+      0,
+      0,
+      firstBall[0],
+      firstBall[1],
+      ...lineData.color,
+      ...firstBall
+    );
     meshPoints.push(
+      // ...lastBall,
       ...lastBall,
-      lastBall[n - 2],
-      lastBall[n - 1],
-      lastBall[n - 2],
-      lastBall[n - 1]
+      lastBall[meshPoints.length - 6],
+      lastBall[meshPoints.length - 5],
+      ...lineData.color,
+      lastBall[meshPoints.length - 6],
+      lastBall[meshPoints.length - 5],
+      ...lineData.color
     );
 
-    const colors = new Array((meshPoints.length / 2) * 4);
-    for (let i = 0; i < colors.length; i++) {
-      colors[i] = lineData.color[i % 4];
-    }
-
-    return { vertices: meshPoints, colors };
+    return { vertices: meshPoints };
   }
 };
 export default FeltPen;

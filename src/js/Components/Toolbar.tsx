@@ -41,7 +41,7 @@ const Toolbar: React.SFC<Props> = props => {
       });
 
       const data = generator.generateData();
-      previewRenderer.current.draw(data.vertices, data.color);
+      previewRenderer.current.draw(data);
     }
   }, [props.color, props.thickness, previewRenderer.current]);
 
