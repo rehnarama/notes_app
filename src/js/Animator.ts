@@ -1,7 +1,5 @@
 import { Hook } from "./utils";
-import { easeOutInterpolation } from './Math';
-
-
+import { easeOutInterpolation } from "./Math";
 
 export default class Animator {
   private value: number;
@@ -29,7 +27,7 @@ export default class Animator {
   ) {
     this.duration = duration;
 
-    if (from) {
+    if (from !== null) {
       this.fromValue = from;
     } else {
       this.fromValue = this.value;
