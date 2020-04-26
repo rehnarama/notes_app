@@ -1,0 +1,14 @@
+.container > input {
+  display: none;
+}
+.container > img {
+  padding: 4px;
+  border-radius: 2px;
+  object-fit: contain;
+}
+.container > input:checked ~ img {
+  background: rgba(0, 0, 0, 0.2);
+}
+.container:hover > img {
+  background: rgba(0, 0, 0, 0.1);
+}

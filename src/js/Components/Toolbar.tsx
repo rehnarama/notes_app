@@ -6,6 +6,11 @@ import LineGenerator from "../Lines/LineGenerator";
 import FeltPen from "../Pen/FeltPen";
 import Drawer from "./Drawer";
 
+import ImageCheckbox from "./ImageCheckbox";
+
+import CursorModeImg from "../../images/cursormode.svg";
+import EraserModeImg from "../../images/eraser.svg";
+
 interface Props {
   onColorChange?: PickFunction;
   onThicknessChange?: (thickness: number) => void;
@@ -46,16 +51,20 @@ const Toolbar: React.SFC<Props> = props => {
     }
   }, [props.color, props.thickness, previewRenderer.current]);
 
-  const onCursorModeChange: React.ChangeEventHandler<HTMLInputElement> = e => {
-    props.onCursorModeChange?.(e.currentTarget.checked);
+  const onCursorModeChange = (checked: boolean) => {
+    props.onCursorModeChange?.(checked);
   };
-  const onEraseModeChange: React.ChangeEventHandler<HTMLInputElement> = e => {
-    props.onEraseModeChange?.(e.currentTarget.checked);
+  const onEraseModeChange = (checked: boolean) => {
+    props.onEraseModeChange?.(checked);
   };
 
   return (
-    <React.Fragment>
-      <div className={classes.container}>
+    <Drawer>
+      <div className={classes.content}>
+        <div
+          className={classes.canvasPreview}
+          ref={attachRenderer}
+        />
         <ColorPicker onPick={props.onColorChange} />
         <input
           type="range"
@@ -65,62 +74,27 @@ const Toolbar: React.SFC<Props> = props => {
           value={props.thickness}
           onChange={onThicknessChange}
         ></input>
-        <div
-          style={{
-            width: 200,
-            height: "100%"
-          }}
-          ref={attachRenderer}
-        />
-        <input
-          type="checkbox"
-          checked={props.cursorMode}
-          id="mode-cursor"
-          onChange={onCursorModeChange}
-        />
-        <label htmlFor="mode-cursor">Cursor Mode</label>
-        <input
-          type="checkbox"
-          checked={props.eraseMode}
-          id="mode-erase"
-          onChange={onEraseModeChange}
-        />
-        <label htmlFor="mode-erase">Erase Mode</label>
+        <div>
+          <ImageCheckbox
+            src={CursorModeImg}
+            id="mode-cursor-mobile"
+            width={32}
+            height={32}
+            checked={props.cursorMode}
+            onChange={onCursorModeChange}
+            className={classes.cursorCheckbox}
+          ></ImageCheckbox>
+          <ImageCheckbox
+            src={EraserModeImg}
+            id="mode-eraser-mobile"
+            width={32}
+            height={32}
+            checked={props.eraseMode}
+            onChange={onEraseModeChange}
+          ></ImageCheckbox>
+        </div>
       </div>
-      <div className={classes.mobileContainer}>
-        <Drawer>
-          <div className={classes.mobileContent}>
-            <ColorPicker onPick={props.onColorChange} />
-            <input
-              type="range"
-              min="0.1"
-              max="3"
-              step="0.2"
-              value={props.thickness}
-              onChange={onThicknessChange}
-            ></input>
-            <div>
-              <input
-                type="checkbox"
-                checked={props.cursorMode}
-                id="mode-cursor"
-                onChange={onCursorModeChange}
-              />
-              <label htmlFor="mode-cursor">Cursor Mode</label>
-            </div>
-            <div>
-              <input
-                type="checkbox"
-                checked={props.eraseMode}
-                id="mode-erase"
-                onChange={onEraseModeChange}
-              />
-              <label htmlFor="mode-erase">Erase Mode</label>
-            </div>
-          </div>
-        </Drawer>
-      </div>
-    </React.Fragment>
+    </Drawer>
   );
 };
 

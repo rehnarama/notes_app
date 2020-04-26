@@ -1,33 +1,33 @@
-.container {
-  padding-left: 16px;
-  padding-right: 16px;
-  height: 64px;
-  background: white;
+.content {
   display: flex;
-  align-items: center;
-  box-shadow: 0 0 8px rgba(0, 0, 0, 0.4);
+  flex-direction: column;
+  padding: 16px;
 }
 
-.mobileContainer {
-  display: none;
+.content > * {
+  margin-bottom: 8px;
 }
 
-@media screen and (max-width: 500px) {
-  .container {
-    display: none;
+.cursorCheckbox {
+  margin-right: 8px;
+}
+
+.canvasPreview {
+  width: 100%;
+  height: 64px;
+}
+
+@media screen and (min-width: 750px) {
+  .content {
+    flex-direction: row;
   }
 
-  .mobileContainer {
-    display: block;
+  .content > * {
+    margin-bottom: 0;
+    margin-right: 8px;
   }
 
-  .mobileContent {
-    display: flex;
-    flex-direction: column;
-    padding: 16px;
-  }
-
-  .mobileContent > * {
-    margin-bottom: 8px;
+  .canvasPreview {
+    width: 200px;
   }
 }
