@@ -112,6 +112,10 @@ export default class GestureRecognizer {
       buttons: data.buttons
     });
 
+    // New pointer should reset pan momentum
+    this.panMomentum.x = 0;
+    this.panMomentum.y = 0;
+
     if (this.capture) {
       this.element.setPointerCapture(e.pointerId);
     }
