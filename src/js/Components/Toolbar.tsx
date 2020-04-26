@@ -28,27 +28,43 @@ const Toolbar: React.SFC<Props> = props => {
   };
   let previewRenderer = React.useRef<LineRenderer | null>(null);
   const attachRenderer = React.useCallback(node => {
-    console.log(node);
     previewRenderer.current = new LineRenderer(node);
   }, []);
 
   React.useEffect(() => {
-    if (previewRenderer.current) {
-      const generator = new LineGenerator(FeltPen);
-      generator.addLine(0, {
-        points: [
-          { pressure: 0.8, x: 20, y: 20 },
-          { pressure: 0.6, x: 70, y: 60 },
-          { pressure: 0.5, x: 80, y: 20 },
-          { pressure: 0.2, x: 150, y: 50 }
-        ],
-        color: props.color,
-        thickness: props.thickness
-      });
+    function updatePreview() {
+      if (previewRenderer.current) {
+        previewRenderer.current.updateSize();
 
-      const data = generator.generateData();
-      previewRenderer.current.draw(data);
+        const generator = new LineGenerator(FeltPen);
+        const width = previewRenderer.current.width;
+        const height = previewRenderer.current.height;
+        generator.addLine(0, {
+          points: [
+            { pressure: 0.8, x: props.thickness * 5, y: props.thickness * 5 },
+            { pressure: 0.6, x: width * 0.4, y: height * 0.9 },
+            { pressure: 0.5, x: width * 0.6, y: height * 0.2 },
+            {
+              pressure: 0.2,
+              x: width - props.thickness * 5,
+              y: height - props.thickness * 5
+            }
+          ],
+          color: props.color,
+          thickness: props.thickness
+        });
+
+        const data = generator.generateData();
+        previewRenderer.current.draw(data);
+      }
     }
+    updatePreview();
+
+    window.addEventListener("resize", updatePreview);
+
+    return () => {
+      window.removeEventListener("resize", updatePreview);
+    };
   }, [props.color, props.thickness, previewRenderer.current]);
 
   const onCursorModeChange = (checked: boolean) => {

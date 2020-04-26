@@ -37,6 +37,9 @@ export default class LineRenderer {
   public position = { x: 0, y: 0 };
   public zoom: number = 1;
 
+  public width: number = 0;
+  public height: number = 0;
+
   private indexBuffer: WebGLBuffer | null = null;
   private vertexBuffer: WebGLBuffer | null = null;
 
@@ -113,11 +116,12 @@ export default class LineRenderer {
       return;
     }
 
+    this.width = this.targetElement.offsetWidth;
+    this.height = this.targetElement.offsetHeight;
+
     const scaleFactor = window.devicePixelRatio;
-    const width = (this.gl.canvas.width =
-      this.targetElement.offsetWidth * scaleFactor);
-    const height = (this.gl.canvas.height =
-      this.targetElement.offsetHeight * scaleFactor);
+    const width = (this.gl.canvas.width = this.width * scaleFactor);
+    const height = (this.gl.canvas.height = this.height * scaleFactor);
 
     if ("style" in this.gl.canvas) {
       this.gl.canvas.style.width = this.targetElement.offsetWidth + "px";
