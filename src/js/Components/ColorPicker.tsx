@@ -1,6 +1,7 @@
 import * as React from "react";
 import { Color } from "../Lines/LineRenderer";
 import classes from "./ColorPicker.module.css";
+import classNames from "classnames";
 
 function colorToRgba(color: Color) {
   return `rgba(${color[0] * 255}, ${color[1] * 255}, ${color[2] * 255}, ${
@@ -56,14 +57,14 @@ const ColorButton: React.SFC<{
   }
 };
 
-const ColorPicker: React.SFC<{ onPick?: PickFunction }> = ({ onPick }) => {
+export interface Props {
+  onPick?: PickFunction;
+  className?: string;
+}
+
+const ColorPicker: React.SFC<Props> = ({ onPick, className }) => {
   return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center"
-      }}
-    >
+    <div className={classNames(classes.container, className)}>
       <ColorButton color={[0, 0, 0, 1]} onPick={onPick} />
       <ColorButton color={[1, 0, 0, 1]} onPick={onPick} />
       <ColorButton color={[0, 1, 0, 1]} onPick={onPick} />

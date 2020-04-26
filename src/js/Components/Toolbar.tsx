@@ -61,11 +61,11 @@ const Toolbar: React.SFC<Props> = props => {
   return (
     <Drawer>
       <div className={classes.content}>
-        <div
-          className={classes.canvasPreview}
-          ref={attachRenderer}
+        <div className={classes.canvasPreview} ref={attachRenderer} />
+        <ColorPicker
+          onPick={props.onColorChange}
+          className={classes.colorPicker}
         />
-        <ColorPicker onPick={props.onColorChange} />
         <input
           type="range"
           min="0.1"

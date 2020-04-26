@@ -17,6 +17,11 @@
   height: 64px;
 }
 
+.colorPicker {
+  width: 100%;
+  justify-content: space-between;
+}
+
 @media screen and (min-width: 750px) {
   .content {
     flex-direction: row;
@@ -29,5 +34,9 @@
 
   .canvasPreview {
     width: 200px;
+  }
+
+  .colorPicker {
+    width: auto;
   }
 }

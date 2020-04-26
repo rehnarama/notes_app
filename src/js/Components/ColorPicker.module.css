@@ -1,3 +1,13 @@
+.container {
+  display: flex;
+  align-items: center;
+  overflow-x: auto;
+}
+
+.container > * {
+  flex-shrink: 0;
+}
+
 .colorButton {
   width: 24px;
   height: 24px;
