@@ -346,8 +346,8 @@ export default class GestureRecognizer {
     timeDelta: number
   ) {
     this.panMomentum = {
-      x: lerp(this.panMomentum.x, 0, timeDelta),
-      y: lerp(this.panMomentum.y, 0, timeDelta)
+      x: lerp(this.panMomentum.x, 0, timeDelta / 200),
+      y: lerp(this.panMomentum.y, 0, timeDelta / 200)
     };
     this.panMomentum.x += delta.x;
     this.panMomentum.y += delta.y;
