@@ -7,3 +7,27 @@
   align-items: center;
   box-shadow: 0 0 8px rgba(0, 0, 0, 0.4);
 }
+
+.mobileContainer {
+  display: none;
+}
+
+@media screen and (max-width: 500px) {
+  .container {
+    display: none;
+  }
+
+  .mobileContainer {
+    display: block;
+  }
+
+  .mobileContent {
+    display: flex;
+    flex-direction: column;
+    padding: 16px;
+  }
+
+  .mobileContent > * {
+    margin-bottom: 8px;
+  }
+}

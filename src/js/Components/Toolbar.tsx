@@ -4,6 +4,7 @@ import classes from "./Toolbar.module.css";
 import LineRenderer, { Color } from "../Lines/LineRenderer";
 import LineGenerator from "../Lines/LineGenerator";
 import FeltPen from "../Pen/FeltPen";
+import Drawer from "./Drawer";
 
 interface Props {
   onColorChange?: PickFunction;
@@ -53,38 +54,73 @@ const Toolbar: React.SFC<Props> = props => {
   };
 
   return (
-    <div className={classes.container}>
-      <ColorPicker onPick={props.onColorChange} />
-      <input
-        type="range"
-        min="0.1"
-        max="3"
-        step="0.2"
-        value={props.thickness}
-        onChange={onThicknessChange}
-      ></input>
-      <div
-        style={{
-          width: 200,
-          height: "100%"
-        }}
-        ref={attachRenderer}
-      />
-      <input
-        type="checkbox"
-        checked={props.cursorMode}
-        id="mode-cursor"
-        onChange={onCursorModeChange}
-      />
-      <label htmlFor="mode-cursor">Cursor Mode</label>
-      <input
-        type="checkbox"
-        checked={props.eraseMode}
-        id="mode-erase"
-        onChange={onEraseModeChange}
-      />
-      <label htmlFor="mode-erase">Erase Mode</label>
-    </div>
+    <React.Fragment>
+      <div className={classes.container}>
+        <ColorPicker onPick={props.onColorChange} />
+        <input
+          type="range"
+          min="0.1"
+          max="3"
+          step="0.2"
+          value={props.thickness}
+          onChange={onThicknessChange}
+        ></input>
+        <div
+          style={{
+            width: 200,
+            height: "100%"
+          }}
+          ref={attachRenderer}
+        />
+        <input
+          type="checkbox"
+          checked={props.cursorMode}
+          id="mode-cursor"
+          onChange={onCursorModeChange}
+        />
+        <label htmlFor="mode-cursor">Cursor Mode</label>
+        <input
+          type="checkbox"
+          checked={props.eraseMode}
+          id="mode-erase"
+          onChange={onEraseModeChange}
+        />
+        <label htmlFor="mode-erase">Erase Mode</label>
+      </div>
+      <div className={classes.mobileContainer}>
+        <Drawer>
+          <div className={classes.mobileContent}>
+            <ColorPicker onPick={props.onColorChange} />
+            <input
+              type="range"
+              min="0.1"
+              max="3"
+              step="0.2"
+              value={props.thickness}
+              onChange={onThicknessChange}
+            ></input>
+            <div>
+              <input
+                type="checkbox"
+                checked={props.cursorMode}
+                id="mode-cursor"
+                onChange={onCursorModeChange}
+              />
+              <label htmlFor="mode-cursor">Cursor Mode</label>
+            </div>
+            <div>
+              <input
+                type="checkbox"
+                checked={props.eraseMode}
+                id="mode-erase"
+                onChange={onEraseModeChange}
+              />
+              <label htmlFor="mode-erase">Erase Mode</label>
+            </div>
+          </div>
+        </Drawer>
+      </div>
+    </React.Fragment>
   );
 };
 
