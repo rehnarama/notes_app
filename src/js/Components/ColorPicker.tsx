@@ -38,11 +38,9 @@ const ColorButton: React.SFC<{
           onChange={onInputChange}
         />
         <button
-          className={classes.colorButton}
+          className={`${classes.colorButton} ${classes.colorWheel}`}
           onClick={() => pickerRef.current?.click()}
-        >
-          +
-        </button>
+        ></button>
       </React.Fragment>
     );
   } else {
