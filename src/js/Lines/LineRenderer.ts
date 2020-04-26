@@ -165,6 +165,6 @@ export default class LineRenderer {
       u_zoom: this.zoom
     });
 
-    this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, data.vertices.length / 6);
+    this.gl.drawArrays(this.gl.TRIANGLES, 0, data.vertices.length / 6);
   }
 }

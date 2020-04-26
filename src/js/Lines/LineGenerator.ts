@@ -60,9 +60,8 @@ export default class LineGenerator {
 
   public generateData(): AttributeData {
     if (this.isDirty) {
-      const data = Array.from(this.lineVertices.values());
       let counter = 0;
-      for (const attributes of data) {
+      for (const attributes of this.lineVertices.values()) {
         for (const attribute of attributes.vertices) {
           this.vertices[counter] = attribute;
           counter++;

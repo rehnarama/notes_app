@@ -1,6 +1,7 @@
 import { Point } from "../Lines/LineGenerator";
+import { Color } from "../Lines/LineRenderer";
 
-const CIRCLE_VERTICE_PER_PIXEL = 5;
+const CIRCLE_VERTICE_PER_PIXEL = 2;
 const DEFAULT_LINE_WIDTH = 1;
 
 export function getPointRadius(point: Point) {
@@ -9,9 +10,28 @@ export function getPointRadius(point: Point) {
   return DEFAULT_LINE_WIDTH + 5 * pointSquare;
 }
 
+export function buildTriangle(
+  a: { x: number; y: number },
+  b: { x: number; y: number },
+  c: { x: number; y: number },
+  color: Color
+) {
+  return [a.x, a.y, ...color, b.x, b.y, ...color, c.x, c.y, ...color];
+}
+
+export function buildQuad(
+  a: { x: number; y: number },
+  b: { x: number; y: number },
+  c: { x: number; y: number },
+  d: { x: number; y: number },
+  color: Color
+) {
+  return [...buildTriangle(a, c, b, color), ...buildTriangle(b, c, d, color)];
+}
+
 export function generateCircleVertices(
   point: Point,
-  color: number[],
+  color: Color,
   thickness: number = 1
 ) {
   const vertices = [];
@@ -21,27 +41,18 @@ export function generateCircleVertices(
   const nVertices = CIRCLE_VERTICE_PER_PIXEL * circumference;
   const dTheta = (2 * Math.PI) / nVertices;
 
-  for (let theta = 0; theta < 2 * Math.PI; theta += 2 * dTheta) {
+  for (let theta = 0; theta <= 2 * Math.PI; theta += dTheta) {
     const x1 = radius * Math.cos(theta) + point.x;
     const y1 = radius * Math.sin(theta) + point.y;
 
-    const x2 = radius * Math.cos(theta + dTheta) + point.x;
-    const y2 = radius * Math.sin(theta + dTheta) + point.y;
+    const nextTheta = Math.min(2 * Math.PI, theta + dTheta);
+
+    const x2 = radius * Math.cos(nextTheta) + point.x;
+    const y2 = radius * Math.sin(nextTheta) + point.y;
     vertices.push(
-      x1,
-      y1,
-      ...color,
-      point.x,
-      point.y,
-      ...color,
-      x2,
-      y2,
-      ...color
+      ...buildTriangle(point, { x: x1, y: y1 }, { x: x2, y: y2 }, color)
     );
   }
-
-  // Connect to the first vertice to "close" the circle
-  vertices.push(vertices[0], vertices[1], ...color);
 
   return vertices;
 }

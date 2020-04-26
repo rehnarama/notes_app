@@ -1,6 +1,11 @@
 import Pen, { AttributeData } from "./Pen";
 import { Line } from "../Lines/LineGenerator";
-import { getPointRadius, generateCircleVertices } from "./PenUtils";
+import {
+  getPointRadius,
+  generateCircleVertices,
+  buildQuad,
+  buildTriangle
+} from "./PenUtils";
 
 const MAX_ANGLE = 0.5;
 
@@ -13,7 +18,11 @@ const FeltPen: Pen = {
 
     let oldPoint = null;
 
-    let meshPoints: number[] = [];
+    let meshPoints: number[] = generateCircleVertices(
+      line[0],
+      lineData.color,
+      lineData.thickness
+    );
 
     for (let index = 0; index < line.length; index++) {
       const point = line[index];
@@ -49,90 +58,60 @@ const FeltPen: Pen = {
       const pointRadius = getPointRadius(point) * lineData.thickness;
       const oldPointRadius = getPointRadius(oldPoint) * lineData.thickness;
 
-      let aX = oldPoint.x + perpX * oldPointRadius;
-      let aY = oldPoint.y + perpY * oldPointRadius;
+      let a = {
+        x: oldPoint.x + perpX * oldPointRadius,
+        y: oldPoint.y + perpY * oldPointRadius
+      };
 
-      let bX = oldPoint.x - perpX * oldPointRadius;
-      let bY = oldPoint.y - perpY * oldPointRadius;
+      let b = {
+        x: oldPoint.x - perpX * oldPointRadius,
+        y: oldPoint.y - perpY * oldPointRadius
+      };
 
-      let cX = point.x + perpX * pointRadius;
-      let cY = point.y + perpY * pointRadius;
-
-      let dX = point.x - perpX * pointRadius;
-      let dY = point.y - perpY * pointRadius;
-
-      meshPoints.push(
-        aX,
-        aY,
-        ...lineData.color,
-        bX,
-        bY,
-        ...lineData.color,
-        cX,
-        cY,
-        ...lineData.color,
-        dX,
-        dY,
-        ...lineData.color
-      );
+      let c = {
+        x: point.x + perpX * pointRadius,
+        y: point.y + perpY * pointRadius
+      };
+      let d = {
+        x: point.x - perpX * pointRadius,
+        y: point.y - perpY * pointRadius
+      };
+      meshPoints.push(...buildQuad(a, b, c, d, lineData.color));
 
       // Add a rounded line cap
       const minAngle = Math.min(angle, nextAngle);
       const maxAngle = Math.max(angle, nextAngle);
       const sign = Math.sign(angle - nextAngle);
-      for (let theta = minAngle; theta < maxAngle; theta += MAX_ANGLE) {
+      let oldCapPoint: { x: number; y: number } | null = null;
+      let theta = minAngle;
+      while (theta <= maxAngle) {
         const perpTheta = theta + Math.PI / 2;
         const x = point.x + sign * Math.cos(perpTheta) * pointRadius;
         const y = point.y + sign * Math.sin(perpTheta) * pointRadius;
-        meshPoints.push(
-          x, y, 
-          ...lineData.color, 
-          dX, dY, 
-          ...lineData.color
-        );
+        const capPoint = { x, y };
+        if (oldCapPoint !== null) {
+          meshPoints.push(
+            ...buildTriangle(point, oldCapPoint, capPoint, lineData.color)
+          );
+        }
+        oldCapPoint = capPoint;
+
+        if (theta === maxAngle) {
+          break;
+        } else {
+          theta = Math.min(theta + MAX_ANGLE, maxAngle);
+        }
       }
-      // Add final point to fix the seam
-      meshPoints.push(
-        cX, cY, 
-        ...lineData.color, 
-        dX, dY, 
-        ...lineData.color
-      );
 
       oldPoint = point;
     }
 
-    const firstBall = generateCircleVertices(
-      line[0],
-      lineData.color,
-      lineData.thickness
-    );
-    const lastBall = generateCircleVertices(
-      line[line.length - 1],
-      lineData.color,
-      lineData.thickness
-    );
-    const n = lastBall.length;
-
-    // We add these vertices so that flat triangles
-    // are drawn between disjoint objects
-    meshPoints.splice(
-      0,
-      0,
-      firstBall[0],
-      firstBall[1],
-      ...lineData.color,
-      ...firstBall
-    );
     meshPoints.push(
-      // ...lastBall,
-      ...lastBall,
-      lastBall[meshPoints.length - 6],
-      lastBall[meshPoints.length - 5],
-      ...lineData.color,
-      lastBall[meshPoints.length - 6],
-      lastBall[meshPoints.length - 5],
-      ...lineData.color
+      ...generateCircleVertices(
+        line[line.length - 1],
+        lineData.color,
+        lineData.thickness
+      )
     );
 
     return { vertices: meshPoints };
