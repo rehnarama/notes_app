@@ -17,6 +17,11 @@ const Drawer: React.SFC = props => {
     let drawer = drawerRef.current;
     let handle = handleRef.current;
 
+    if (isVisible.current && drawer && handle) {
+      // This will set proper height first render
+      currentVisible.current = drawer.scrollHeight - handle.scrollHeight;
+    }
+
     function updateDrawerHeight() {
       if (drawer && handle) {
         const visible = drawer.scrollHeight - currentVisible.current;
