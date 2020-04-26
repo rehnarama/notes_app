@@ -35,17 +35,30 @@ const Drawer: React.SFC = props => {
       gestureRecognizer.current = new GestureRecognizer(handle, true);
 
       gestureRecognizer.current.onPan.add(e => {
-        currentVisible.current -= e.pageDelta.y;
-        if (drawer && handle) {
-          currentVisible.current = Math.min(
-            currentVisible.current,
-            drawer.scrollHeight - handle.scrollHeight
-          );
-        }
-        currentVisible.current = Math.max(currentVisible.current, 0);
-        updateDrawerHeight();
+        if (e.pointerType === "scroll") {
+          let target: number;
 
-        latestMomentum.current = e.momentum;
+          if (e.delta.y < 0 && drawer && handle) {
+            target = drawer.scrollHeight - handle.scrollHeight;
+            isVisible.current = true;
+          } else {
+            target = 0;
+            isVisible.current = false;
+          }
+          animator.current.animateTo(target, 200, currentVisible.current);
+        } else {
+          currentVisible.current -= e.pageDelta.y;
+          if (drawer && handle) {
+            currentVisible.current = Math.min(
+              currentVisible.current,
+              drawer.scrollHeight - handle.scrollHeight
+            );
+          }
+          currentVisible.current = Math.max(currentVisible.current, 0);
+          updateDrawerHeight();
+
+          latestMomentum.current = e.momentum;
+        }
       });
       gestureRecognizer.current.onDown.add(e => {
         if (isVisible.current && drawer && handle) {
