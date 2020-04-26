@@ -1,0 +1,25 @@
+.container {
+  background-color: white;
+  position: fixed;
+  height: 100vh;
+  top: 0;
+  left: 0;
+  right: 0;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.4);
+  border-radius: 28px 28px 0 0;
+}
+
+.handle {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  height: 49px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.handleDot {
+  height: 4px;
+  width: 100px;
+  background-color: rgba(0, 0, 0, 0.1);
+  border-radius: 2px;
+}

@@ -1,4 +1,5 @@
 import { Hook } from "./utils";
+import { lerp } from "./Math";
 
 const SCROLL_MULTIPLIER = 50;
 const TIME_BUDGET = 6;
@@ -11,6 +12,8 @@ interface PointerData extends Point {
   type: string;
   pressure: number;
   buttons: number;
+  pagePosition: Point;
+  time: number;
 }
 
 export interface ZoomEvent {
@@ -20,14 +23,17 @@ export interface ZoomEvent {
 }
 export interface PanEvent {
   delta: { x: number; y: number };
+  pageDelta: { x: number; y: number };
   position: { x: number; y: number };
   pressure: number;
   pointerType: string;
   buttons: number;
   isPinch: boolean;
+  momentum: { x: number; y: number };
 }
 export type DownEvent = {
   position: { x: number; y: number };
+  pagePosition: { x: number; y: number };
   pressure: number;
   pointerType: string;
   buttons: number;
@@ -37,6 +43,8 @@ export type UpEvent = DownEvent;
 export default class GestureRecognizer {
   private element: HTMLElement;
 
+  private panMomentum = { x: 0, y: 0 };
+
   private prevPointerMap = new Map<number, PointerData>();
   private pointerMap = new Map<number, PointerData>();
 
@@ -45,8 +53,11 @@ export default class GestureRecognizer {
   public onDown = new Hook<(e: DownEvent) => void>();
   public onUp = new Hook<(e: UpEvent) => void>();
 
-  constructor(element: HTMLElement) {
+  private capture: boolean;
+
+  constructor(element: HTMLElement, capture = false) {
     this.element = element;
+    this.capture = capture;
 
     element.addEventListener("pointermove", this.handleOnPointerMove, {
       passive: true
@@ -86,28 +97,47 @@ export default class GestureRecognizer {
       y: e.offsetY,
       type: e.pointerType,
       pressure: e.pressure,
-      buttons: e.buttons
+      buttons: e.buttons,
+      pagePosition: { x: e.pageX, y: e.pageY },
+      time: performance.now()
     };
     this.prevPointerMap.set(e.pointerId, data);
     this.pointerMap.set(e.pointerId, data);
 
     this.onDown.call({
       position: { x: data.x, y: data.y },
+      pagePosition: data.pagePosition,
       pointerType: data.type,
       pressure: data.pressure,
       buttons: data.buttons
     });
+
+    if (this.capture) {
+      this.element.setPointerCapture(e.pointerId);
+    }
   };
   handleOnPointerUp = (e: PointerEvent) => {
+    const wasDown = this.pointerMap.has(e.pointerId);
+
     this.prevPointerMap.delete(e.pointerId);
     this.pointerMap.delete(e.pointerId);
 
-    this.onUp.call({
-      position: { x: e.offsetX, y: e.offsetY },
-      pointerType: e.pointerType,
-      pressure: e.pressure,
-      buttons: e.buttons
-    });
+    if (wasDown) {
+      this.onUp.call({
+        position: { x: e.offsetX, y: e.offsetY },
+        pagePosition: { x: e.pageX, y: e.pageY },
+        pointerType: e.pointerType,
+        pressure: e.pressure,
+        buttons: e.buttons
+      });
+    }
+
+    if (
+      e.pointerType === "mouse" &&
+      this.element.hasPointerCapture(e.pointerId)
+    ) {
+      this.element.releasePointerCapture(e.pointerId);
+    }
   };
 
   handleOnPointerMove = (e: PointerEvent) => {
@@ -129,7 +159,9 @@ export default class GestureRecognizer {
         y: e.offsetY,
         type: e.pointerType,
         pressure: e.pressure,
-        buttons: e.buttons
+        buttons: e.buttons,
+        pagePosition: { x: e.pageX, y: e.pageY },
+        time: performance.now()
       });
     }
 
@@ -196,13 +228,28 @@ export default class GestureRecognizer {
 
       const prevMiddle = this.getMiddle(prevFirst, prevSecond);
       const deltaMiddle = this.getDifference(middle, prevMiddle);
+
+      const pageMiddle = this.getMiddle(
+        first.pagePosition,
+        second.pagePosition
+      );
+      const prevPageMiddle = this.getMiddle(
+        prevFirst.pagePosition,
+        prevSecond.pagePosition
+      );
+      const pageDelta = this.getDifference(pageMiddle, prevPageMiddle);
+
+      this.updatePanMomentum(pageDelta, first.time - prevFirst.time);
+
       this.onPan.call({
         delta: deltaMiddle,
         position: middle,
         pointerType: first.type,
         pressure: (first.pressure + second.pressure) / 2,
         buttons: first.buttons | second.buttons,
-        isPinch: true
+        isPinch: true,
+        pageDelta,
+        momentum: this.panMomentum
       });
     }
   }
@@ -218,6 +265,12 @@ export default class GestureRecognizer {
       const point = this.pointerMap.values().next().value as PointerData;
 
       const delta = this.getDifference(point, prevPoint);
+      const pageDelta = this.getDifference(
+        point.pagePosition,
+        prevPoint.pagePosition
+      );
+
+      this.updatePanMomentum(pageDelta, point.time - prevPoint.time);
 
       this.onPan.call({
         delta,
@@ -225,7 +278,9 @@ export default class GestureRecognizer {
         pointerType: point.type,
         pressure: point.pressure,
         buttons: point.buttons,
-        isPinch: false
+        isPinch: false,
+        pageDelta,
+        momentum: this.panMomentum
       });
     }
   }
@@ -257,7 +312,9 @@ export default class GestureRecognizer {
         pressure: NaN,
         buttons: e.buttons,
         pointerType: "scroll",
-        isPinch: false
+        isPinch: false,
+        pageDelta: { x: SCROLL_MULTIPLIER * delta.y, y: 0 },
+        momentum: { x: 0, y: 0 }
       });
     } else {
       this.onPan.call({
@@ -269,9 +326,26 @@ export default class GestureRecognizer {
         pressure: NaN,
         buttons: e.buttons,
         pointerType: "scroll",
-        isPinch: false
+        isPinch: false,
+        pageDelta: {
+          x: SCROLL_MULTIPLIER * -delta.x,
+          y: SCROLL_MULTIPLIER * -delta.y
+        },
+        momentum: { x: 0, y: 0 }
       });
     }
     e.preventDefault();
   };
+
+  private updatePanMomentum(
+    delta: { x: number; y: number },
+    timeDelta: number
+  ) {
+    this.panMomentum = {
+      x: lerp(this.panMomentum.x, 0, timeDelta),
+      y: lerp(this.panMomentum.y, 0, timeDelta)
+    };
+    this.panMomentum.x += delta.x;
+    this.panMomentum.y += delta.y;
+  }
 }
