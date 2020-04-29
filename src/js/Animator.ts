@@ -1,5 +1,5 @@
 import { Hook } from "./utils";
-import { easeOutInterpolation } from "./Math";
+import { easeOutInterpolation } from "./math";
 
 export default class Animator {
   private value: number;
