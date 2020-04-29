@@ -110,6 +110,20 @@ export default class LineRenderer {
     this.zoom += zoomDelta;
   }
 
+  private guessScale() {
+    if (this.scale === "auto") {
+      const dpr = window.devicePixelRatio;
+      if (Math.max(this.width, this.height) * dpr > 3000) {
+        // Performance becomes bad in this case
+        return 1;
+      } else {
+        return dpr;
+      }
+    } else {
+      return this.scale;
+    }
+  }
+
   public updateSize() {
     if (this.gl.canvas === null) {
       return;
@@ -118,7 +132,7 @@ export default class LineRenderer {
     this.width = this.targetElement.offsetWidth;
     this.height = this.targetElement.offsetHeight;
 
-    const scaleFactor = this.scale === "auto" ? window.devicePixelRatio : this.scale;
+    const scaleFactor = this.guessScale();
     const width = (this.gl.canvas.width = this.width * scaleFactor);
     const height = (this.gl.canvas.height = this.height * scaleFactor);
 
