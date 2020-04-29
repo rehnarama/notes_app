@@ -40,7 +40,8 @@ export default class LineRenderer {
   public width: number = 0;
   public height: number = 0;
 
-  private indexBuffer: WebGLBuffer | null = null;
+  public scale: "auto" | number = "auto";
+
   private vertexBuffer: WebGLBuffer | null = null;
 
   private programInfo: twgl.ProgramInfo | null = null;
@@ -89,8 +90,6 @@ export default class LineRenderer {
       4 * 2
     );
 
-    this.indexBuffer = this.gl.createBuffer();
-
     this.updateSize();
   }
 
@@ -119,7 +118,7 @@ export default class LineRenderer {
     this.width = this.targetElement.offsetWidth;
     this.height = this.targetElement.offsetHeight;
 
-    const scaleFactor = window.devicePixelRatio;
+    const scaleFactor = this.scale === "auto" ? window.devicePixelRatio : this.scale;
     const width = (this.gl.canvas.width = this.width * scaleFactor);
     const height = (this.gl.canvas.height = this.height * scaleFactor);
 
@@ -147,8 +146,6 @@ export default class LineRenderer {
     }
 
     this.clear();
-
-    this.gl.useProgram(this.programInfo.program);
 
     if (!redrawOnly) {
       this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vertexBuffer);

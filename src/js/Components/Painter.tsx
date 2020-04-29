@@ -62,6 +62,8 @@ class Painter extends React.PureComponent<Props> {
     }
 
     this.lineRenderer = new LineRenderer(this.targetRef.current);
+    this.lineRenderer.scale = 1;
+    this.lineRenderer.updateSize();
     this.requestRenderFrame();
 
     this.gestureRecognizer = new GestureRecognizer(this.targetRef.current);
