@@ -29,15 +29,18 @@ export default class LineGenerator {
   private lineVertices: Map<LineId, AttributeData> = new Map();
   private vertices: number[] = [];
 
+  private interpolate: boolean;
+
   private isDirty = false;
 
-  constructor(pen: Pen) {
+  constructor(pen: Pen, interpolate = false) {
     this.pen = pen;
+    this.interpolate = interpolate;
   }
 
   public addLine(id: LineId, line: Line) {
     const interpolatedLine: Line = {
-      points: interpolateLine(line.points),
+      points: this.interpolate ? interpolateLine(line.points) : line.points,
       color: line.color,
       thickness: line.thickness
     };

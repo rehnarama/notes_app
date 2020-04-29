@@ -6,6 +6,7 @@ import {
   buildQuad,
   buildTriangle
 } from "./PenUtils";
+import { Color } from "../Lines/LineRenderer";
 
 const MAX_ANGLE = 0.5;
 
@@ -76,7 +77,10 @@ const FeltPen: Pen = {
         x: point.x - perpX * pointRadius,
         y: point.y - perpY * pointRadius
       };
-      meshPoints.push(...buildQuad(a, b, c, d, lineData.color));
+      // While we techincally could get away with only one quad, it will cause precision problems 
+      // when adding the line cap
+      buildQuad(meshPoints, oldPoint, a, point, c, lineData.color);
+      buildQuad(meshPoints, oldPoint, b, point, d, lineData.color);
 
       // Add a rounded line cap
       const minAngle = Math.min(angle, nextAngle);
@@ -90,9 +94,7 @@ const FeltPen: Pen = {
         const y = point.y + sign * Math.sin(perpTheta) * pointRadius;
         const capPoint = { x, y };
         if (oldCapPoint !== null) {
-          meshPoints.push(
-            ...buildTriangle(point, oldCapPoint, capPoint, lineData.color)
-          );
+            buildTriangle(meshPoints, point, oldCapPoint, capPoint, lineData.color)
         }
         oldCapPoint = capPoint;
 

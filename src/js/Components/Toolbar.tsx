@@ -36,7 +36,7 @@ const Toolbar: React.SFC<Props> = props => {
       if (previewRenderer.current) {
         previewRenderer.current.updateSize();
 
-        const generator = new LineGenerator(FeltPen);
+        const generator = new LineGenerator(FeltPen, true);
         const width = previewRenderer.current.width;
         const height = previewRenderer.current.height;
         generator.addLine(0, {

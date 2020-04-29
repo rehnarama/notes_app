@@ -10,7 +10,7 @@ import GestureRecognizer, {
 } from "../GestureRecognizer";
 
 const MIN_REMOVE_DISTANCE = 10;
-const MIN_DISTANCE = 6;
+const MIN_DISTANCE = 2;
 // Default pressure is treated as
 // pressure not supported, as per spec: https://www.w3.org/TR/pointerevents/
 
