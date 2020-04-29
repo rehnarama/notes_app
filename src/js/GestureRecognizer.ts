@@ -1,5 +1,5 @@
 import { Hook } from "./utils";
-import { lerp } from "./Math";
+import { lerp } from "./math";
 
 const SCROLL_MULTIPLIER = 50;
 const TIME_BUDGET = 6;
