@@ -145,9 +145,6 @@ export default class LineRenderer {
     if (this.gl === null || this.programInfo === null) {
       return;
     }
-    if (data.vertices.length == 0) {
-      return;
-    }
 
     this.clear();
 
