@@ -1,0 +1,77 @@
+{
+  "bundle": {
+    "commonSourceDirectory": "../src",
+    "sourceFiles": [
+      "../src/IWebSocket.ts",
+      "../src/SignallingMessage.ts",
+      "../src/Signalling.ts",
+      "../src/SignallingServer.ts",
+      "../src/TestUtils.ts",
+      "../src/index.ts",
+      "../src/start.ts"
+    ],
+    "js": {
+      "sections": [
+        {
+          "pos": 0,
+          "end": 597,
+          "kind": "emitHelpers",
+          "data": "typescript:extends"
+        },
+        {
+          "pos": 599,
+          "end": 1287,
+          "kind": "emitHelpers",
+          "data": "typescript:awaiter"
+        },
+        {
+          "pos": 1289,
+          "end": 3105,
+          "kind": "emitHelpers",
+          "data": "typescript:generator"
+        },
+        {
+          "pos": 3107,
+          "end": 3577,
+          "kind": "emitHelpers",
+          "data": "typescript:values"
+        },
+        {
+          "pos": 3579,
+          "end": 22515,
+          "kind": "text"
+        }
+      ],
+      "sources": {
+        "helpers": [
+          "typescript:extends",
+          "typescript:awaiter",
+          "typescript:generator",
+          "typescript:values"
+        ]
+      }
+    },
+    "dts": {
+      "sections": [
+        {
+          "pos": 0,
+          "end": 30,
+          "kind": "type",
+          "data": "node"
+        },
+        {
+          "pos": 32,
+          "end": 60,
+          "kind": "type",
+          "data": "ws"
+        },
+        {
+          "pos": 62,
+          "end": 4894,
+          "kind": "text"
+        }
+      ]
+    }
+  },
+  "version": "3.7.5"
+}

@@ -1,0 +1,23 @@
+{
+  "name": "network",
+  "version": "1.0.0",
+  "main": "build/index.js",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "test": "jest",
+    "build": "tsc",
+    "build:watch": "tsc --watch"
+  },
+  "network": {
+    "signalling": "1.0.0"
+  },
+  "devDependencies": {
+    "@types/jest": "^24.9.1",
+    "jest": "^25.1.0",
+    "ts-jest": "^25.0.0",
+    "typescript": "^3.7.5",
+    "wrtc": "^0.4.3"
+  },
+  "dependencies": {}
+}

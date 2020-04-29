@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "outDir": "./build",
+    "rootDir": "./src",
+
+    "target": "es5",
+    "module": "commonjs",
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "removeComments": false,
+    "strict": true,
+
+    "esModuleInterop": true,
+
+    "forceConsistentCasingInFileNames": true,
+
+    "downlevelIteration": true,
+
+    "incremental": true
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules/**/*", "**/*.test.ts"]
+}
