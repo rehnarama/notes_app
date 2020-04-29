@@ -14,6 +14,8 @@ export enum ReadyState {
   ERROR
 }
 
+const DEFAULT_PORT = parseInt(process.env.PORT ?? "8080");
+
 export default class SignallingServer {
   private wss: WSS;
 
@@ -26,7 +28,7 @@ export default class SignallingServer {
     return this.peers.size;
   }
 
-  constructor(port = 8080) {
+  constructor(port = DEFAULT_PORT) {
     this.state = ReadyState.WAITING;
     this.wss = new WSS({ port }, () => {
       this.state = ReadyState.OPEN;
