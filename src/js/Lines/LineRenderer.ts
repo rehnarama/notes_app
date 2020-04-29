@@ -4,7 +4,7 @@ import { AttributeData } from "../Pen/Pen";
 export type Color = [number, number, number, number];
 
 const vsSource = `
-precision mediump float;
+precision highp float;
 
 attribute vec4 a_position;
 attribute vec4 a_color;
@@ -23,7 +23,7 @@ void main() {
 }
   `;
 const fsSource = `
-precision mediump float;
+precision highp float;
 
 varying vec4 v_color;
 
