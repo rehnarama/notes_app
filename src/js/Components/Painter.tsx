@@ -31,6 +31,7 @@ class Painter extends React.PureComponent<Props> {
   erase = false;
 
   isDirty = false;
+  hasNew = false;
 
   lineGenerator = new LineGenerator(FeltPen);
   lineRenderer: LineRenderer | null = null;
@@ -50,6 +51,7 @@ class Painter extends React.PureComponent<Props> {
       } else if (msg.name === "rmv") {
         this.lineGenerator.removeLine(msg.id);
       }
+      this.hasNew = true;
       this.requestRenderFrame();
     });
   }
@@ -216,9 +218,10 @@ class Painter extends React.PureComponent<Props> {
     }
 
     const data = this.lineGenerator.generateData();
-    this.lineRenderer.draw(data);
+    this.lineRenderer.draw(data, !this.hasNew);
 
     this.isDirty = false;
+    this.hasNew = false;
   };
 
   render() {

@@ -141,7 +141,7 @@ export default class LineRenderer {
     this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
   }
 
-  public draw(data: AttributeData) {
+  public draw(data: AttributeData, redrawOnly = false) {
     if (this.gl === null || this.programInfo === null) {
       return;
     }
@@ -150,12 +150,14 @@ export default class LineRenderer {
 
     this.gl.useProgram(this.programInfo.program);
 
-    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vertexBuffer);
-    this.gl.bufferData(
-      this.gl.ARRAY_BUFFER,
-      new Float32Array(data.vertices),
-      this.gl.STREAM_DRAW
-    );
+    if (!redrawOnly) {
+      this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vertexBuffer);
+      this.gl.bufferData(
+        this.gl.ARRAY_BUFFER,
+        new Float32Array(data.vertices),
+        this.gl.STREAM_DRAW
+      );
+    }
 
     twgl.setUniforms(this.programInfo, {
       u_position: [this.position.x, this.position.y],

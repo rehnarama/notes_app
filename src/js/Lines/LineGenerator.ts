@@ -71,6 +71,8 @@ export default class LineGenerator {
         }
       }
       this.vertices.splice(counter, this.vertices.length - counter);
+
+      this.isDirty = false;
     }
 
     return {
