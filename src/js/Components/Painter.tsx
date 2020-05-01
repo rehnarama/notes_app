@@ -8,8 +8,9 @@ import GestureRecognizer, {
   ZoomEvent,
   DownEvent
 } from "../GestureRecognizer";
+import { intersects } from "../Lines/LineUtils";
 
-const MIN_REMOVE_DISTANCE = 10;
+const MIN_REMOVE_DISTANCE = 6;
 const MIN_DISTANCE = 2;
 // Default pressure is treated as
 // pressure not supported, as per spec: https://www.w3.org/TR/pointerevents/
@@ -26,6 +27,7 @@ class Painter extends React.PureComponent<Props> {
   previousPoint?: Point;
 
   moveStart = { x: 0, y: 0 };
+  previousErasePoint = { x: 0, y: 0 };
 
   drawPointerIsDown = false;
   erase = false;
@@ -88,7 +90,11 @@ class Painter extends React.PureComponent<Props> {
       ) {
         const point = new Point(e.position.x, e.position.y, e.pressure);
         if (this.isEraseButtons(e.buttons) || this.props.eraseMode) {
-          this.eraseLine(point);
+          this.eraseLine([
+            this.windowToLocalPoint(this.previousErasePoint),
+            this.windowToLocalPoint(point)
+          ]);
+          this.previousErasePoint = point;
         } else {
           this.addPoint(point);
         }
@@ -105,7 +111,7 @@ class Painter extends React.PureComponent<Props> {
       if (this.props.cursorMode || e.pointerType === "pen") {
         const point = new Point(e.position.x, e.position.y, e.pressure);
         if (this.isEraseButtons(e.buttons) || this.props.eraseMode) {
-          this.eraseLine(point);
+          this.previousErasePoint = point;
         } else {
           this.props.lines.beginLine(this.props.color, this.props.thickness);
           this.addPoint(point);
@@ -129,6 +135,17 @@ class Painter extends React.PureComponent<Props> {
       }
     }
   };
+
+  private windowToLocalPoint<T extends { x: number; y: number }>(point: T): T {
+    if (this.lineRenderer === null) {
+      return point;
+    }
+    return {
+      ...point,
+      x: (point.x - this.lineRenderer.position.x) / this.lineRenderer.zoom,
+      y: (point.y - this.lineRenderer.position.y) / this.lineRenderer.zoom
+    };
+  }
 
   componentWillUnmount() {
     window.removeEventListener("resize", this.handleOnResize);
@@ -159,27 +176,41 @@ class Painter extends React.PureComponent<Props> {
     return buttons === 32 || buttons === 2;
   };
 
-  eraseLine = (point: Point) => {
+  eraseLine = (
+    eraseSegment: [{ x: number; y: number }, { x: number; y: number }]
+  ) => {
     if (this.lineRenderer === null) {
       return;
     }
 
-    const realPoint = new Point(
-      (point.x - this.lineRenderer.position.x) / this.lineRenderer.zoom,
-      (point.y - this.lineRenderer.position.y) / this.lineRenderer.zoom
-    );
-
     const allLines = this.props.lines.getLines();
     for (const [id, line] of allLines) {
-      for (let pointIndex = 0; pointIndex < line.points.length; pointIndex++) {
-        const dx = line.points[pointIndex].x - realPoint.x;
-        const dy = line.points[pointIndex].y - realPoint.y;
+      if (line.points.length === 1) {
+        // Can't build a segment out of one point, so let's just check if we're close
+        for (const point of eraseSegment) {
+          const dx = line.points[0].x - point.x;
+          const dy = line.points[0].y - point.y;
 
-        const distSq = dx * dx + dy * dy;
+          const distSq = dx * dx + dy * dy;
 
-        // Found a line close enough
-        if (distSq < MIN_REMOVE_DISTANCE * MIN_REMOVE_DISTANCE) {
-          this.props.lines.removeLine(id);
+          // Found a line close enough
+          if (distSq < MIN_REMOVE_DISTANCE * MIN_REMOVE_DISTANCE) {
+            this.props.lines.removeLine(id);
+          }
+        }
+      } else {
+        for (
+          let pointIndex = 1;
+          pointIndex < line.points.length;
+          pointIndex++
+        ) {
+          const first = line.points[pointIndex - 1];
+          const second = line.points[pointIndex - 0];
+          const segment: [Point, Point] = [first, second];
+
+          if (intersects(eraseSegment, segment)) {
+            this.props.lines.removeLine(id);
+          }
         }
       }
     }
