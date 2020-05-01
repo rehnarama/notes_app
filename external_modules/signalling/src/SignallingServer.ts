@@ -7,6 +7,8 @@ import SignallingMessage, {
   IceCandidate,
   AssignedPeerId
 } from "./SignallingMessage";
+import http from "http";
+import https from "https";
 
 export enum ReadyState {
   WAITING,
@@ -28,11 +30,17 @@ export default class SignallingServer {
     return this.peers.size;
   }
 
-  constructor(port = DEFAULT_PORT) {
+  constructor(arg: number | http.Server | https.Server = DEFAULT_PORT) {
     this.state = ReadyState.WAITING;
-    this.wss = new WSS({ port }, () => {
-      this.state = ReadyState.OPEN;
-    });
+    if (typeof arg === "number") {
+      this.wss = new WSS({ port: arg }, () => {
+        this.state = ReadyState.OPEN;
+      });
+    } else {
+      this.wss = new WSS({ server: arg }, () => {
+        this.state = ReadyState.OPEN;
+      });
+    }
 
     this.wss.on("connection", this.onConnection);
   }
