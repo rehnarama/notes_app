@@ -6,7 +6,7 @@ import classes from "./App.module.css";
 import { FullMeshNetwork } from "network";
 import Lines from "../Lines/Lines";
 
-const fmn = new FullMeshNetwork("wss://rehnarama-notes.glitch.me");
+const fmn = new FullMeshNetwork("wss://notes-signalling.herokuapp.com");
 const lines = new Lines(fmn);
 
 const App: React.SFC = () => {
