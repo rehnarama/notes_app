@@ -1,6 +1,8 @@
 import * as twgl from "twgl.js";
 import { AttributeData } from "../Pen/Pen";
 
+const MAX_RESOLUTION = 1920;
+
 export type Color = [number, number, number, number];
 
 const vsSource = `
@@ -113,9 +115,11 @@ export default class LineRenderer {
   private guessScale() {
     if (this.scale === "auto") {
       const dpr = window.devicePixelRatio;
-      if (Math.max(this.width, this.height) * dpr > 3000) {
-        // Performance becomes bad in this case
-        return 1;
+      const resolution = Math.max(this.width, this.height) * dpr;
+
+      if (resolution / MAX_RESOLUTION > 1) {
+        // Performance is too bad if we use such a high resolution, scale down to a reasonable level
+        return dpr / (resolution / MAX_RESOLUTION);
       } else {
         return dpr;
       }
@@ -133,8 +137,10 @@ export default class LineRenderer {
     this.height = this.targetElement.offsetHeight;
 
     const scaleFactor = this.guessScale();
-    const width = (this.gl.canvas.width = this.width * scaleFactor);
-    const height = (this.gl.canvas.height = this.height * scaleFactor);
+    const width = (this.gl.canvas.width = Math.round(this.width * scaleFactor));
+    const height = (this.gl.canvas.height = Math.round(
+      this.height * scaleFactor
+    ));
 
     if ("style" in this.gl.canvas) {
       this.gl.canvas.style.width = this.targetElement.offsetWidth + "px";
