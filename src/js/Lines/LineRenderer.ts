@@ -1,5 +1,6 @@
 import * as twgl from "twgl.js";
 import { AttributeData } from "../Pen/Pen";
+import GLApp from "../GLApp";
 
 const MAX_RESOLUTION = 1920;
 
@@ -34,8 +35,12 @@ void main(void) {
 }`;
 
 export default class LineRenderer {
-  private targetElement: HTMLElement;
   private gl: WebGLRenderingContext;
+  private _glApp: GLApp;
+  public get glApp() {
+    return this._glApp;
+  }
+
   public _position = { x: 0, y: 0 };
   public set position(value: { x: number; y: number }) {
     this._position = value;
@@ -53,30 +58,35 @@ export default class LineRenderer {
     return this._zoom;
   }
 
-  public width: number = 0;
-  public height: number = 0;
-
-  public scale: "auto" | number = "auto";
-
   private vertexBuffer: WebGLBuffer | null = null;
 
   private isDirty = false;
   private trianglesToDraw: number = 0;
 
   private programInfo: twgl.ProgramInfo | null = null;
-  constructor(targetElement: HTMLElement) {
-    this.targetElement = targetElement;
+  constructor(glApp: GLApp) {
+    this._glApp = glApp;
+    this.gl = this._glApp.gl;
+    this.initProgram();
 
-    const canvas = document.createElement("canvas");
-    this.targetElement.appendChild(canvas);
-
-    this.gl = canvas.getContext("webgl") as WebGLRenderingContext;
-
-    this.initWebGl();
+    this.updateSize();
+    this.glApp.onDimensionChange.add(this.updateSize);
+    this.glApp.onScaleChange.add(this.updateSize);
   }
 
-  private initWebGl() {
-    // this.createProgram();
+  private updateSize = () => {
+    if (this.programInfo) {
+      twgl.setUniforms(this.programInfo, {
+        u_resolution: [
+          this.glApp.width * this.glApp.actualScale,
+          this.glApp.height * this.glApp.actualScale
+        ],
+        u_scale: this.glApp.actualScale
+      });
+    }
+  };
+
+  private initProgram() {
     this.programInfo = twgl.createProgramInfo(this.gl, [vsSource, fsSource]);
     this.gl.useProgram(this.programInfo.program);
 
@@ -108,8 +118,6 @@ export default class LineRenderer {
       4 * 6,
       4 * 2
     );
-
-    this.updateSize();
   }
 
   public setZoom(zoom: number, around: { x: number; y: number }) {
@@ -129,52 +137,6 @@ export default class LineRenderer {
     this.zoom += zoomDelta;
   }
 
-  private guessScale() {
-    if (this.scale === "auto") {
-      const dpr = window.devicePixelRatio;
-      const resolution = Math.max(this.width, this.height) * dpr;
-
-      if (resolution / MAX_RESOLUTION > 1) {
-        // Performance is too bad if we use such a high resolution, scale down to a reasonable level
-        return dpr / (resolution / MAX_RESOLUTION);
-      } else {
-        return dpr;
-      }
-    } else {
-      return this.scale;
-    }
-  }
-
-  public updateSize() {
-    if (this.gl.canvas === null) {
-      return;
-    }
-
-    this.width = this.targetElement.offsetWidth;
-    this.height = this.targetElement.offsetHeight;
-
-    const scaleFactor = this.guessScale();
-    const width = (this.gl.canvas.width = Math.round(this.width * scaleFactor));
-    const height = (this.gl.canvas.height = Math.round(
-      this.height * scaleFactor
-    ));
-
-    if ("style" in this.gl.canvas) {
-      this.gl.canvas.style.width = this.targetElement.offsetWidth + "px";
-      this.gl.canvas.style.height = this.targetElement.offsetHeight + "px";
-    }
-
-    this.gl.viewport(0, 0, width, height);
-    if (this.programInfo) {
-      twgl.setUniforms(this.programInfo, {
-        u_resolution: [width, height],
-        u_scale: scaleFactor
-      });
-    }
-
-    this.requestFrame();
-  }
-
   public clear() {
     this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
   }
@@ -192,7 +154,7 @@ export default class LineRenderer {
     this.isDirty = false;
     this.clear();
     this.draw();
-  }
+  };
 
   public loadData(data: AttributeData) {
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vertexBuffer);

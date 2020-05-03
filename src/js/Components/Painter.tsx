@@ -9,6 +9,7 @@ import GestureRecognizer, {
   DownEvent
 } from "../GestureRecognizer";
 import { intersects } from "../Lines/LineUtils";
+import GLApp from "../GLApp";
 
 const MIN_REMOVE_DISTANCE = 6;
 const MIN_DISTANCE = 2;
@@ -65,8 +66,7 @@ class Painter extends React.PureComponent<Props> {
       throw new Error("Could not find target element");
     }
 
-    this.lineRenderer = new LineRenderer(this.targetRef.current);
-    this.lineRenderer.updateSize();
+    this.lineRenderer = new LineRenderer(new GLApp(this.targetRef.current));
 
     this.gestureRecognizer = new GestureRecognizer(this.targetRef.current);
     this.gestureRecognizer.onZoom.add(this.handleOnZoom);
@@ -78,8 +78,6 @@ class Painter extends React.PureComponent<Props> {
       "contextmenu",
       this.handleOnContextMenu
     );
-
-    window.addEventListener("resize", this.handleOnResize);
   }
 
   private handleOnPan = (e: PanEvent) => {
@@ -147,8 +145,6 @@ class Painter extends React.PureComponent<Props> {
   }
 
   componentWillUnmount() {
-    window.removeEventListener("resize", this.handleOnResize);
-
     this.gestureRecognizer?.dispose();
 
     if (this.targetRef.current !== null) {
@@ -161,12 +157,6 @@ class Painter extends React.PureComponent<Props> {
 
   handleOnContextMenu: EventListener = event => {
     event.preventDefault();
-  };
-
-  handleOnResize = () => {
-    if (this.lineRenderer !== null) {
-      this.lineRenderer.updateSize();
-    }
   };
 
   isEraseButtons = (buttons: number) => {

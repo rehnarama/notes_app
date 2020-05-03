@@ -11,6 +11,7 @@ import ImageCheckbox from "./ImageCheckbox";
 import CursorModeImg from "../../images/cursormode.svg";
 import EraserModeImg from "../../images/eraser.svg";
 import useHash from "./useHash";
+import GLApp from "../GLApp";
 
 const chars = "abcdefghijklmnopqrstuvwxyz1234567890";
 function randomString(length: number) {
@@ -39,18 +40,16 @@ const Toolbar: React.SFC<Props> = props => {
     props.onThicknessChange?.(e.currentTarget.valueAsNumber);
   };
   let previewRenderer = React.useRef<LineRenderer | null>(null);
-  const attachRenderer = React.useCallback(node => {
-    previewRenderer.current = new LineRenderer(node);
+  const attachRenderer = React.useCallback((node: HTMLDivElement) => {
+    previewRenderer.current = new LineRenderer(new GLApp(node));
   }, []);
 
   React.useEffect(() => {
     function updatePreview() {
       if (previewRenderer.current) {
-        previewRenderer.current.updateSize();
-
         const generator = new LineGenerator(FeltPen, true);
-        const width = previewRenderer.current.width;
-        const height = previewRenderer.current.height;
+        const width = previewRenderer.current.glApp.width;
+        const height = previewRenderer.current.glApp.height;
         generator.addLine(0, {
           points: [
             { pressure: 0.8, x: props.thickness * 5, y: props.thickness * 5 },
@@ -72,10 +71,10 @@ const Toolbar: React.SFC<Props> = props => {
     }
     updatePreview();
 
-    window.addEventListener("resize", updatePreview);
+    previewRenderer.current?.glApp.onDimensionChange.add(updatePreview);
 
     return () => {
-      window.removeEventListener("resize", updatePreview);
+      previewRenderer.current?.glApp.onDimensionChange.remove(updatePreview);
     };
   }, [props.color, props.thickness, previewRenderer.current]);
 
