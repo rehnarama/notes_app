@@ -7,7 +7,7 @@ import { FullMeshNetwork } from "network";
 import Lines from "../Lines/Lines";
 import useHash from "./useHash";
 
-const SIGNALLING_URL = "ws://localhost:8080";
+const SIGNALLING_URL = "wss://notes-signalling.herokuapp.com";
 
 const App: React.SFC = () => {
   const { hash } = useHash();
