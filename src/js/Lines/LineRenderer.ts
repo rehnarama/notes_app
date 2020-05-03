@@ -59,11 +59,14 @@ export default class LineRenderer {
   }
 
   private vertexBuffer: WebGLBuffer | null = null;
-
-  private isDirty = false;
-  private trianglesToDraw: number = 0;
+  private data: AttributeData | null = null;
 
   private programInfo: twgl.ProgramInfo | null = null;
+  private uniformLocations = {
+    position: 0,
+    color: 0
+  };
+
   constructor(glApp: GLApp) {
     this._glApp = glApp;
     this.gl = this._glApp.gl;
@@ -78,6 +81,7 @@ export default class LineRenderer {
 
   private updateSize = () => {
     if (this.programInfo) {
+      this.gl.useProgram(this.programInfo.program);
       twgl.setUniforms(this.programInfo, {
         u_resolution: [
           this.glApp.width * this.glApp.actualScale,
@@ -88,41 +92,49 @@ export default class LineRenderer {
     }
   };
 
-  private initProgram() {
+  private initProgram = () => {
     this.programInfo = twgl.createProgramInfo(this.gl, [vsSource, fsSource]);
     this.gl.useProgram(this.programInfo.program);
 
-    this.vertexBuffer = this.gl.createBuffer();
-    const positionLocation = this.gl.getAttribLocation(
+    this.uniformLocations.position = this.gl.getAttribLocation(
       this.programInfo.program,
       "a_position"
     );
-    const colorLocation = this.gl.getAttribLocation(
+    this.uniformLocations.color = this.gl.getAttribLocation(
       this.programInfo.program,
       "a_color"
     );
-    this.gl.enableVertexAttribArray(colorLocation);
-    this.gl.enableVertexAttribArray(positionLocation);
-    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vertexBuffer);
-    this.gl.vertexAttribPointer(
-      positionLocation,
-      2,
-      this.gl.FLOAT,
-      false,
-      4 * 6,
-      0
-    );
-    this.gl.vertexAttribPointer(
-      colorLocation,
-      4,
-      this.gl.FLOAT,
-      false,
-      4 * 6,
-      4 * 2
-    );
+
+    this.vertexBuffer = this.gl.createBuffer();
+  };
+
+  private bindBuffers() {
+    if (this.programInfo) {
+      this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vertexBuffer);
+
+      this.gl.enableVertexAttribArray(this.uniformLocations.position);
+      this.gl.enableVertexAttribArray(this.uniformLocations.color);
+
+      this.gl.vertexAttribPointer(
+        this.uniformLocations.position,
+        2,
+        this.gl.FLOAT,
+        false,
+        4 * 6,
+        0
+      );
+      this.gl.vertexAttribPointer(
+        this.uniformLocations.color,
+        4,
+        this.gl.FLOAT,
+        false,
+        4 * 6,
+        4 * 2
+      );
+    }
   }
 
-  public setZoom(zoom: number, around: { x: number; y: number }) {
+  public setZoom = (zoom: number, around: { x: number; y: number }) => {
     let zoomDelta = zoom - this.zoom;
     const oldZoom = this.zoom;
 
@@ -137,31 +149,33 @@ export default class LineRenderer {
     this.position.y -= deltaY * zoomDelta;
 
     this.zoom += zoomDelta;
-  }
+  };
 
-  public loadData(data: AttributeData) {
-    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vertexBuffer);
-    this.gl.bufferData(
-      this.gl.ARRAY_BUFFER,
-      new Float32Array(data.vertices),
-      this.gl.STREAM_DRAW
-    );
-    this.trianglesToDraw = data.vertices.length / 6;
-
+  public loadData = (data: AttributeData) => {
+    this.data = data;
     this.glApp.requestFrame();
-  }
+  };
 
   public draw = () => {
-    if (this.gl === null || this.programInfo === null) {
+    if (this.gl === null || this.programInfo === null || this.data === null) {
       return;
     }
 
     this.gl.useProgram(this.programInfo.program);
+    this.bindBuffers();
+
+    this.gl.bufferData(
+      this.gl.ARRAY_BUFFER,
+      new Float32Array(this.data.vertices),
+      this.gl.STREAM_DRAW
+    );
+    const trianglesToDraw = this.data.vertices.length / 6;
+
     twgl.setUniforms(this.programInfo, {
       u_position: [this.position.x, this.position.y],
       u_zoom: this.zoom
     });
 
-    this.gl.drawArrays(this.gl.TRIANGLES, 0, this.trianglesToDraw);
-  }
+    this.gl.drawArrays(this.gl.TRIANGLES, 0, trianglesToDraw);
+  };
 }

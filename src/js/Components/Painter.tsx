@@ -1,12 +1,13 @@
 import * as React from "react";
-import LineGenerator, { Point } from "../Lines/LineGenerator";
+import LineGenerator, { Point, Line } from "../Lines/LineGenerator";
 import LineRenderer, { Color } from "../Lines/LineRenderer";
 import FeltPen from "../Pen/FeltPen";
-import Lines from "../Lines/Lines";
+import Lines, { Box, LineId } from "../Lines/Lines";
 import GestureRecognizer, {
   PanEvent,
   ZoomEvent,
-  DownEvent
+  DownEvent,
+  UpEvent
 } from "../GestureRecognizer";
 import { intersects } from "../Lines/LineUtils";
 import GLApp from "../GLApp";
@@ -30,6 +31,9 @@ class Painter extends React.PureComponent<Props> {
   moveStart = { x: 0, y: 0 };
   previousErasePoint = { x: 0, y: 0 };
 
+  selectStart = { x: 0, y: 0 };
+  isSelecting = false;
+
   drawPointerIsDown = false;
   erase = false;
 
@@ -38,15 +42,19 @@ class Painter extends React.PureComponent<Props> {
 
   lineGenerator = new LineGenerator(FeltPen);
   lineRenderer: LineRenderer | null = null;
+  selectRenderer: LineRenderer | null = null;
+  selectedLinesRenderer: LineRenderer | null = null;
   targetRef = React.createRef<HTMLDivElement>();
 
   gestureRecognizer: GestureRecognizer | null = null;
+
+  selectedLines = new Map<LineId, Line>();
 
   constructor(props: Props) {
     super(props);
 
     props.lines.onChange.add(msg => {
-      if (msg.name === "add") {
+      if (msg.name === "add" || msg.name === "upd") {
         const line = props.lines.getLines().get(msg.id);
         if (line) {
           this.lineGenerator.addLine(msg.id, line);
@@ -66,11 +74,15 @@ class Painter extends React.PureComponent<Props> {
       throw new Error("Could not find target element");
     }
 
-    this.lineRenderer = new LineRenderer(new GLApp(this.targetRef.current));
+    const glApp = new GLApp(this.targetRef.current);
+    this.selectedLinesRenderer = new LineRenderer(glApp);
+    this.lineRenderer = new LineRenderer(glApp);
+    this.selectRenderer = new LineRenderer(glApp);
 
     this.gestureRecognizer = new GestureRecognizer(this.targetRef.current);
     this.gestureRecognizer.onZoom.add(this.handleOnZoom);
     this.gestureRecognizer.onDown.add(this.handleOnDown);
+    this.gestureRecognizer.onUp.add(this.handleOnUp);
 
     this.gestureRecognizer.onPan.add(this.handleOnPan);
 
@@ -80,9 +92,41 @@ class Painter extends React.PureComponent<Props> {
     );
   }
 
+  componentDidUpdate() {
+    for (const [lineId, _] of this.selectedLines) {
+      this.props.lines.updateLine(
+        lineId,
+        this.props.color,
+        this.props.thickness
+      );
+    }
+    if (this.selectedLines.size > 0) {
+      // To apply new thickness to marked lines
+      this.markSelectedLines();
+    }
+  }
+
   private handleOnPan = (e: PanEvent) => {
     if (this.lineRenderer) {
-      if (
+      if (this.isSelecting) {
+        const a = this.selectStart;
+        const b = e.position;
+        const box: Box = {
+          left: Math.min(a.x, b.x),
+          top: Math.min(a.y, b.y),
+          bottom: Math.max(a.y, b.y),
+          right: Math.max(a.x, b.x)
+        };
+        const gen = new LineGenerator(FeltPen, false);
+        this.genBox(gen, box);
+        this.selectRenderer?.loadData(gen.generateData());
+
+        const insides = this.props.lines.getLinesInside(
+          this.windowToLocalBox(box)
+        );
+        this.selectedLines = insides;
+        this.markSelectedLines();
+      } else if (
         (this.props.cursorMode && e.pointerType !== "scroll") ||
         e.pointerType === "pen"
       ) {
@@ -101,7 +145,17 @@ class Painter extends React.PureComponent<Props> {
           x: this.lineRenderer.position.x + e.delta.x,
           y: this.lineRenderer.position.y + e.delta.y
         };
+        if (this.selectedLinesRenderer) {
+          this.selectedLinesRenderer.position = this.lineRenderer.position;
+        }
       }
+    }
+  };
+
+  private handleOnUp = (e: UpEvent) => {
+    if (this.isSelecting) {
+      this.selectRenderer?.loadData({ vertices: [] });
+      this.isSelecting = false;
     }
   };
 
@@ -111,6 +165,9 @@ class Painter extends React.PureComponent<Props> {
         const point = new Point(e.position.x, e.position.y, e.pressure);
         if (this.isEraseButtons(e.buttons) || this.props.eraseMode) {
           this.previousErasePoint = point;
+        } else if (this.isSelectButtons(e.buttons)) {
+          this.isSelecting = true;
+          this.selectStart = e.position;
         } else {
           this.props.lines.beginLine(this.props.color, this.props.thickness);
           this.addPoint(point);
@@ -129,9 +186,45 @@ class Painter extends React.PureComponent<Props> {
             y: e.around.y / this.lineRenderer.zoom
           }
         );
+        if (this.selectedLinesRenderer) {
+          this.selectedLinesRenderer.position = this.lineRenderer.position;
+          this.selectedLinesRenderer.zoom = this.lineRenderer.zoom;
+        }
       }
     }
   };
+
+  private genBox(
+    gen: LineGenerator,
+    box: Box,
+    color = [0.7, 0.7, 0.7, 1] as Color
+  ) {
+    gen.addLine(Math.round(Math.random() * Number.MAX_SAFE_INTEGER), {
+      color,
+      points: [
+        new Point(box.left, box.top),
+        new Point(box.right, box.top),
+        new Point(box.right, box.bottom),
+        new Point(box.left, box.bottom),
+        new Point(box.left, box.top)
+      ],
+      thickness: 0.5
+    });
+  }
+
+  private markSelectedLines() {
+    const selectedGen = new LineGenerator(FeltPen, false);
+    for (const [lineId, line] of this.selectedLines) {
+      const selectionLine: Line = {
+        points: line.points,
+        color: [0.8, 0.8, 0.8, 1],
+        thickness: line.thickness + 2
+      };
+      selectedGen.addLine(lineId, selectionLine);
+    }
+    const data = selectedGen.generateData();
+    this.selectedLinesRenderer?.loadData(data);
+  }
 
   private windowToLocalPoint<T extends { x: number; y: number }>(point: T): T {
     if (this.lineRenderer === null) {
@@ -141,6 +234,20 @@ class Painter extends React.PureComponent<Props> {
       ...point,
       x: (point.x - this.lineRenderer.position.x) / this.lineRenderer.zoom,
       y: (point.y - this.lineRenderer.position.y) / this.lineRenderer.zoom
+    };
+  }
+  private windowToLocalBox<T extends Box>(box: T): T {
+    if (this.lineRenderer === null) {
+      return box;
+    }
+    return {
+      ...box,
+      left: (box.left - this.lineRenderer.position.x) / this.lineRenderer.zoom,
+      right:
+        (box.right - this.lineRenderer.position.x) / this.lineRenderer.zoom,
+      top: (box.top - this.lineRenderer.position.y) / this.lineRenderer.zoom,
+      bottom:
+        (box.bottom - this.lineRenderer.position.y) / this.lineRenderer.zoom
     };
   }
 
@@ -161,7 +268,12 @@ class Painter extends React.PureComponent<Props> {
 
   isEraseButtons = (buttons: number) => {
     // See https://developer.mozilla.org/en-US/docs/Web/API/Pointer_events#Determining_button_states
-    return buttons === 32 || buttons === 2;
+    return buttons === 32;
+  };
+
+  isSelectButtons = (buttons: number) => {
+    // See https://developer.mozilla.org/en-US/docs/Web/API/Pointer_events#Determining_button_states
+    return buttons === 2;
   };
 
   eraseLine = (
