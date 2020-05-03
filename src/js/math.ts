@@ -23,3 +23,7 @@ export function easeOutInterpolation(
 ) {
   return lerp(a, b, easeOut(t), clamped);
 }
+
+export function invLerp(a: number, b: number, value: number) {
+  return (value - a) / (b - a);
+}
