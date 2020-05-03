@@ -4,7 +4,8 @@ export enum SignallingEvent {
   NEW_PEER,
   DESCRIPTION,
   ICE_CANDIDATE,
-  ASSIGNED_PEER_ID
+  ASSIGNED_PEER_ID,
+  JOIN_ROOM
 }
 
 export default abstract class SignallingMessage {
@@ -26,6 +27,10 @@ export default abstract class SignallingMessage {
 
   isPong(): this is Pong {
     return this.event === SignallingEvent.PONG;
+  }
+
+  isJoinRoom(): this is JoinRoom {
+    return this.event === SignallingEvent.JOIN_ROOM;
   }
 
   isNewPeer(): this is NewPeer {
@@ -63,6 +68,8 @@ export default abstract class SignallingMessage {
         return new IceCandidate(args[0], args[1]);
       case SignallingEvent.ASSIGNED_PEER_ID:
         return new AssignedPeerId(args[0]);
+      case SignallingEvent.JOIN_ROOM:
+        return new JoinRoom(args[0]);
       default:
         throw new Error("Unknown SignallingEvent");
     }
@@ -117,5 +124,14 @@ export class AssignedPeerId extends SignallingMessage {
   constructor(peerId: number) {
     super(SignallingEvent.ASSIGNED_PEER_ID, [peerId]);
     this.peerId = peerId;
+  }
+}
+
+export class JoinRoom extends SignallingMessage {
+  roomId: string;
+
+  constructor(roomId: string) {
+    super(SignallingEvent.JOIN_ROOM, [roomId]);
+    this.roomId = roomId;
   }
 }

@@ -14,6 +14,7 @@ import IConnection from "./IConnection";
 import Hook from "./Hook";
 
 export default class FullMeshNetwork implements INetwork {
+  private signallingUrl: string;
   private signalling: Signalling;
   private allPeers = new Map<number, Connection>();
   private connectedPeers = new Map<number, Connection>();
@@ -32,14 +33,18 @@ export default class FullMeshNetwork implements INetwork {
    *        ws://localhost:8080
    */
   constructor(signallingUrl: string) {
+    this.signallingUrl = signallingUrl;
     this.signalling = new Signalling(
       this.handleOnAssignedPeerId,
       this.handleOnNewPeer,
       this.handleOnDescription,
       this.handleOnIceCandidate
     );
+  }
 
-    this.signalling.connect(signallingUrl);
+  public async joinRoom(roomId: string) {
+    await this.signalling.connect(this.signallingUrl);
+    this.signalling.joinRoom(roomId);
   }
 
   private handleOnAssignedPeerId: AssignedPeerIdHandler = assignedPeerId => {

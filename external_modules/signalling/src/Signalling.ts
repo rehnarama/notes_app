@@ -3,7 +3,8 @@ import SignallingMessage, {
   NewPeer,
   Description,
   IceCandidate,
-  AssignedPeerId
+  AssignedPeerId,
+  JoinRoom
 } from "./SignallingMessage";
 
 export type AssignedPeerIdHandler = (assignedPeerId: AssignedPeerId) => void;
@@ -38,11 +39,22 @@ export default class Signalling {
     this.onIceCandidate = onIceCandidate;
   }
 
-  public connect(url: string) {
-    this.ws = new WebSocket(url);
-    this.ws.onopen = this.handleOnOpen;
-    this.ws.onclose = this.handleOnClose;
-    this.ws.onmessage = this.handleOnMessage;
+  public async connect(url: string) {
+    return new Promise(res => {
+      this.ws = new WebSocket(url);
+      this.ws.onopen = () => {
+        this.handleOnOpen();
+        res();
+      };
+      this.ws.onclose = this.handleOnClose;
+      this.ws.onmessage = this.handleOnMessage;
+    });
+  }
+
+  public joinRoom(roomId: string) {
+    if (this.ws) {
+      this.ws.send(new JoinRoom(roomId).toJson());
+    }
   }
 
   close() {

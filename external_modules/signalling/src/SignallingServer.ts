@@ -26,6 +26,8 @@ export default class SignallingServer {
   private peers = new Map<number, WS>();
   private idClock = 0;
 
+  private rooms = new Map<string, Map<number, WS>>();
+
   public get numberOfPeers() {
     return this.peers.size;
   }
@@ -57,8 +59,6 @@ export default class SignallingServer {
 
     const assignedPeerId = new AssignedPeerId(id);
     this.send(assignedPeerId, id);
-    const newPeerMessage = new NewPeer(id);
-    this.broadcast(newPeerMessage, id);
 
     socket.onmessage = ({ data: stringData }) => {
       if (typeof stringData === "string") {
@@ -75,6 +75,17 @@ export default class SignallingServer {
         if (message.isIceCandidate()) {
           this.send(new IceCandidate(message.iceCandidate, id), message.peerId);
         }
+        if (message.isJoinRoom()) {
+          let room = this.rooms.get(message.roomId);
+          if (!room) {
+            room = new Map();
+            this.rooms.set(message.roomId, room);
+          }
+          const newPeerMessage = new NewPeer(id);
+          this.broadcast(message.roomId, newPeerMessage, id);
+
+          room.set(id, socket);
+        }
       } else {
         throw new Error("Data was not string. Aborting");
       }
@@ -82,11 +93,24 @@ export default class SignallingServer {
 
     socket.onclose = () => {
       this.peers.delete(id);
+      for (const room of this.rooms.values()) {
+        room.delete(id);
+      }
     };
   };
 
-  broadcast(message: SignallingMessage | string, except?: number) {
-    for (const id of this.peers.keys()) {
+  broadcast(
+    roomId: string,
+    message: SignallingMessage | string,
+    except?: number
+  ) {
+    let room = this.rooms.get(roomId);
+    if (!room) {
+      console.error("Room", room, "does not exist")
+      return;
+    }
+
+    for (const id of room.keys()) {
       if (except === undefined || except !== id) {
         this.send(message, id);
       }
