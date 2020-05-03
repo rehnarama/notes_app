@@ -54,7 +54,9 @@ class Painter extends React.PureComponent<Props> {
         this.lineGenerator.removeLine(msg.id);
       }
       this.hasNew = true;
-      this.requestRenderFrame();
+
+      const data = this.lineGenerator.generateData();
+      this.lineRenderer?.loadData(data);
     });
   }
 
@@ -65,7 +67,6 @@ class Painter extends React.PureComponent<Props> {
 
     this.lineRenderer = new LineRenderer(this.targetRef.current);
     this.lineRenderer.updateSize();
-    this.requestRenderFrame();
 
     this.gestureRecognizer = new GestureRecognizer(this.targetRef.current);
     this.gestureRecognizer.onZoom.add(this.handleOnZoom);
@@ -98,10 +99,11 @@ class Painter extends React.PureComponent<Props> {
           this.addPoint(point);
         }
       } else if (e.pointerType === "touch" || e.pointerType === "scroll") {
-        this.lineRenderer.position.x += e.delta.x;
-        this.lineRenderer.position.y += e.delta.y;
+        this.lineRenderer.position = {
+          x: this.lineRenderer.position.x + e.delta.x,
+          y: this.lineRenderer.position.y + e.delta.y
+        };
       }
-      this.requestRenderFrame();
     }
   };
 
@@ -115,7 +117,6 @@ class Painter extends React.PureComponent<Props> {
           this.props.lines.beginLine(this.props.color, this.props.thickness);
           this.addPoint(point);
         }
-        this.requestRenderFrame();
       }
     }
   };
@@ -130,7 +131,6 @@ class Painter extends React.PureComponent<Props> {
             y: e.around.y / this.lineRenderer.zoom
           }
         );
-        this.requestRenderFrame();
       }
     }
   };
@@ -166,7 +166,6 @@ class Painter extends React.PureComponent<Props> {
   handleOnResize = () => {
     if (this.lineRenderer !== null) {
       this.lineRenderer.updateSize();
-      this.requestRenderFrame();
     }
   };
 
@@ -215,15 +214,6 @@ class Painter extends React.PureComponent<Props> {
     }
   };
 
-  requestRenderFrame = () => {
-    if (this.isDirty) {
-      return;
-    }
-
-    this.isDirty = true;
-    window.requestAnimationFrame(this.renderFrame);
-  };
-
   private addPoint(point: Point) {
     if (this.lineRenderer) {
       point.x -= this.lineRenderer.position.x;
@@ -243,18 +233,6 @@ class Painter extends React.PureComponent<Props> {
     this.props.lines.addPoint(point);
     this.previousPoint = point;
   }
-
-  renderFrame: FrameRequestCallback = () => {
-    if (this.lineRenderer === null) {
-      return;
-    }
-
-    const data = this.lineGenerator.generateData();
-    this.lineRenderer.draw(data, !this.hasNew);
-
-    this.isDirty = false;
-    this.hasNew = false;
-  };
 
   render() {
     return (

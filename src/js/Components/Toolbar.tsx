@@ -67,7 +67,7 @@ const Toolbar: React.SFC<Props> = props => {
         });
 
         const data = generator.generateData();
-        previewRenderer.current.draw(data);
+        previewRenderer.current.loadData(data);
       }
     }
     updatePreview();

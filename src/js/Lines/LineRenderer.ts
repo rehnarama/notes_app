@@ -36,8 +36,22 @@ void main(void) {
 export default class LineRenderer {
   private targetElement: HTMLElement;
   private gl: WebGLRenderingContext;
-  public position = { x: 0, y: 0 };
-  public zoom: number = 1;
+  public _position = { x: 0, y: 0 };
+  public set position(value: { x: number; y: number }) {
+    this._position = value;
+    this.requestFrame();
+  }
+  public get position() {
+    return this._position;
+  }
+  public _zoom: number = 1;
+  public set zoom(value: number) {
+    this._zoom = value;
+    this.requestFrame();
+  }
+  public get zoom() {
+    return this._zoom;
+  }
 
   public width: number = 0;
   public height: number = 0;
@@ -45,6 +59,9 @@ export default class LineRenderer {
   public scale: "auto" | number = "auto";
 
   private vertexBuffer: WebGLBuffer | null = null;
+
+  private isDirty = false;
+  private trianglesToDraw: number = 0;
 
   private programInfo: twgl.ProgramInfo | null = null;
   constructor(targetElement: HTMLElement) {
@@ -154,26 +171,44 @@ export default class LineRenderer {
         u_scale: scaleFactor
       });
     }
+
+    this.requestFrame();
   }
 
   public clear() {
     this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
   }
 
-  public draw(data: AttributeData, redrawOnly = false) {
-    if (this.gl === null || this.programInfo === null) {
+  private requestFrame() {
+    if (this.isDirty) {
       return;
     }
 
-    this.clear();
+    this.isDirty = true;
+    window.requestAnimationFrame(this.onFrame);
+  }
 
-    if (!redrawOnly) {
-      this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vertexBuffer);
-      this.gl.bufferData(
-        this.gl.ARRAY_BUFFER,
-        new Float32Array(data.vertices),
-        this.gl.STREAM_DRAW
-      );
+  private onFrame = () => {
+    this.isDirty = false;
+    this.clear();
+    this.draw();
+  }
+
+  public loadData(data: AttributeData) {
+    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vertexBuffer);
+    this.gl.bufferData(
+      this.gl.ARRAY_BUFFER,
+      new Float32Array(data.vertices),
+      this.gl.STREAM_DRAW
+    );
+    this.trianglesToDraw = data.vertices.length / 6;
+
+    this.requestFrame();
+  }
+
+  public draw() {
+    if (this.gl === null || this.programInfo === null) {
+      return;
     }
 
     twgl.setUniforms(this.programInfo, {
@@ -181,6 +216,6 @@ export default class LineRenderer {
       u_zoom: this.zoom
     });
 
-    this.gl.drawArrays(this.gl.TRIANGLES, 0, data.vertices.length / 6);
+    this.gl.drawArrays(this.gl.TRIANGLES, 0, this.trianglesToDraw);
   }
 }
