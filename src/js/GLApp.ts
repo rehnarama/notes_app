@@ -10,6 +10,8 @@ export default class GLApp {
     return this._gl;
   }
 
+  private isDirty: boolean = false;
+
   public requestedScale: "auto" | number = "auto";
   private _actualScale = 1;
   /**
@@ -46,6 +48,7 @@ export default class GLApp {
     (width: number, height: number) => void
   >();
   public onScaleChange = new Hook<(scale: number) => void>();
+  public onDraw = new Hook<() => void>();
 
   public getContext() {
     return this._gl;
@@ -117,6 +120,25 @@ export default class GLApp {
     if (oldDimensions.width !== width || oldDimensions.height !== height) {
       this.onDimensionChange.call(width, height);
     }
+  }
+
+  private clear() {
+    this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
+  }
+
+  public requestFrame() {
+    if (this.isDirty) {
+      return;
+    }
+
+    this.isDirty = true;
+    window.requestAnimationFrame(this.onFrame);
+  }
+
+  public onFrame = () => {
+    this.isDirty = false;
+    this.clear();
+    this.onDraw.call();
   }
 
   public dispose() {

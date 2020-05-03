@@ -44,7 +44,7 @@ export default class LineRenderer {
   public _position = { x: 0, y: 0 };
   public set position(value: { x: number; y: number }) {
     this._position = value;
-    this.requestFrame();
+    this.glApp.requestFrame();
   }
   public get position() {
     return this._position;
@@ -52,7 +52,7 @@ export default class LineRenderer {
   public _zoom: number = 1;
   public set zoom(value: number) {
     this._zoom = value;
-    this.requestFrame();
+    this.glApp.requestFrame();
   }
   public get zoom() {
     return this._zoom;
@@ -72,6 +72,8 @@ export default class LineRenderer {
     this.updateSize();
     this.glApp.onDimensionChange.add(this.updateSize);
     this.glApp.onScaleChange.add(this.updateSize);
+
+    this.glApp.onDraw.add(this.draw);
   }
 
   private updateSize = () => {
@@ -137,25 +139,6 @@ export default class LineRenderer {
     this.zoom += zoomDelta;
   }
 
-  public clear() {
-    this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
-  }
-
-  private requestFrame() {
-    if (this.isDirty) {
-      return;
-    }
-
-    this.isDirty = true;
-    window.requestAnimationFrame(this.onFrame);
-  }
-
-  private onFrame = () => {
-    this.isDirty = false;
-    this.clear();
-    this.draw();
-  };
-
   public loadData(data: AttributeData) {
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vertexBuffer);
     this.gl.bufferData(
@@ -165,14 +148,15 @@ export default class LineRenderer {
     );
     this.trianglesToDraw = data.vertices.length / 6;
 
-    this.requestFrame();
+    this.glApp.requestFrame();
   }
 
-  public draw() {
+  public draw = () => {
     if (this.gl === null || this.programInfo === null) {
       return;
     }
 
+    this.gl.useProgram(this.programInfo.program);
     twgl.setUniforms(this.programInfo, {
       u_position: [this.position.x, this.position.y],
       u_zoom: this.zoom
