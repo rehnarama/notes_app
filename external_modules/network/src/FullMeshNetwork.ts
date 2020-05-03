@@ -20,6 +20,7 @@ export default class FullMeshNetwork implements INetwork {
   private connectedPeers = new Map<number, Connection>();
 
   public localId?: number;
+  public currentRoomId?: string;
 
   public get connections() {
     return Array.from(this.connectedPeers.values());
@@ -45,6 +46,7 @@ export default class FullMeshNetwork implements INetwork {
   public async joinRoom(roomId: string) {
     await this.signalling.connect(this.signallingUrl);
     this.signalling.joinRoom(roomId);
+    this.currentRoomId = roomId;
   }
 
   private handleOnAssignedPeerId: AssignedPeerIdHandler = assignedPeerId => {
