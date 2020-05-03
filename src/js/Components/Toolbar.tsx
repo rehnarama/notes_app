@@ -10,6 +10,16 @@ import ImageCheckbox from "./ImageCheckbox";
 
 import CursorModeImg from "../../images/cursormode.svg";
 import EraserModeImg from "../../images/eraser.svg";
+import useHash from "./useHash";
+
+const chars = "abcdefghijklmnopqrstuvwxyz1234567890";
+function randomString(length: number) {
+  const arr = new Array(length);
+  for (let i = 0; i < length; i++) {
+    arr[i] = chars[Math.floor(Math.random() * chars.length)];
+  }
+  return arr.join("");
+}
 
 interface Props {
   onColorChange?: PickFunction;
@@ -23,6 +33,8 @@ interface Props {
 }
 
 const Toolbar: React.SFC<Props> = props => {
+  const { hash, setHash } = useHash();
+
   const onThicknessChange: React.ChangeEventHandler<HTMLInputElement> = e => {
     props.onThicknessChange?.(e.currentTarget.valueAsNumber);
   };
@@ -74,6 +86,12 @@ const Toolbar: React.SFC<Props> = props => {
     props.onEraseModeChange?.(checked);
   };
 
+  const inviteCollaborator = () => {
+    if (hash.length === 0) {
+      setHash(randomString(10));
+    }
+  };
+
   return (
     <Drawer>
       <div className={classes.content}>
@@ -109,6 +127,21 @@ const Toolbar: React.SFC<Props> = props => {
             onChange={onEraseModeChange}
           ></ImageCheckbox>
         </div>
+        {hash.length > 0 ? (
+          <React.Fragment>
+            <label>Invite URL:</label>
+            <input
+              type="text"
+              value={location.href}
+              readOnly
+              style={{
+                width: `${location.href.length}ch`
+              }}
+            />
+          </React.Fragment>
+        ) : (
+          <button onClick={inviteCollaborator}>Invite Collaborator</button>
+        )}
       </div>
     </Drawer>
   );
