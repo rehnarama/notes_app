@@ -86,7 +86,7 @@ export default class GLApp {
     }
   }
 
-  public updateSize() {
+  public updateSize = () => {
     if (this._gl.canvas === null) {
       return;
     }
@@ -120,7 +120,7 @@ export default class GLApp {
     if (oldDimensions.width !== width || oldDimensions.height !== height) {
       this.onDimensionChange.call(width, height);
     }
-  }
+  };
 
   private clear() {
     this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
@@ -139,7 +139,7 @@ export default class GLApp {
     this.isDirty = false;
     this.clear();
     this.onDraw.call();
-  }
+  };
 
   public dispose() {
     this._gl.getExtension("WEBGL_lose_context")?.loseContext();
