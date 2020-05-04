@@ -8,35 +8,37 @@ import Lines from "../Lines/Lines";
 import useHash from "./useHash";
 
 const SIGNALLING_URL = "wss://notes-signalling.herokuapp.com";
+const fmn = new FullMeshNetwork(SIGNALLING_URL);
+const lines = new Lines(fmn);
 
 const App: React.SFC = () => {
   const { hash, setHash } = useHash();
-  const fmn = React.useRef(new FullMeshNetwork(SIGNALLING_URL));
-  const lines = React.useRef(new Lines(fmn.current));
 
   React.useEffect(() => {
-    if (hash.length > 0 && hash !== fmn.current.currentRoomId) {
-      if (
-        fmn.current.currentRoomId !== undefined &&
-        lines.current.getLines().size > 0
-      ) {
+    if (
+      hash.length > 0 &&
+      lines !== null &&
+      fmn !== null &&
+      hash !== fmn.currentRoomId
+    ) {
+      if (fmn.currentRoomId !== undefined && lines.getLines().size > 0) {
         const leave = window.confirm(
           "All changes will be deleted if you change room. Do you want to continue?"
         );
         if (!leave) {
-          setHash(fmn.current.currentRoomId);
+          setHash(fmn.currentRoomId);
           return;
         }
       }
 
-      if (fmn.current.currentRoomId !== undefined) {
-        fmn.current.close();
-        for (const [id, _] of lines.current.getLines()) {
-          lines.current.removeLine(id);
+      if (fmn.currentRoomId !== undefined) {
+        fmn.close();
+        for (const [id, _] of lines.getLines()) {
+          lines.removeLine(id);
         }
       }
 
-      fmn.current.joinRoom(hash);
+      fmn.joinRoom(hash);
     }
   }, [hash]);
 
@@ -62,7 +64,7 @@ const App: React.SFC = () => {
       <Painter
         color={color}
         thickness={thickness}
-        lines={lines.current}
+        lines={lines}
         eraseMode={eraseMode}
         cursorMode={cursorMode}
       />
