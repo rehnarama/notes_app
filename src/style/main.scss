@@ -23,6 +23,15 @@ button {
   font-family: inherit;
 }
 
+input[type="text"] {
+  border-radius: 4px;
+  padding: 4px;
+  border: 2px solid var(--bg-overlay-color);
+  font-family: inherit;
+  background: var(--bg-color);
+  color: var(--text-color);
+}
+
 :root {
   --bg-color: rgba(255, 255, 255, 1);
   --bg-color-secondary: rgba(255, 255, 255, 1);
@@ -30,6 +39,7 @@ button {
   --text-color: rgba(0, 0, 0, 0.8);
   --shadow-color: rgba(0, 0, 0, 0.4);
   --shadow-radius: 8px;
+
 }
 
 @media (prefers-color-scheme: dark) {
