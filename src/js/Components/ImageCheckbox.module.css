@@ -7,8 +7,8 @@
   object-fit: contain;
 }
 .container > input:checked ~ img {
-  background: rgba(0, 0, 0, 0.2);
+  background: var(--bg-color);
 }
 .container:hover > img {
-  background: rgba(0, 0, 0, 0.1);
+  outline: 2px solid var(--bg-color);
 }

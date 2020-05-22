@@ -4,8 +4,6 @@ import { render } from "react-dom";
 
 import App from "./Components/App";
 
-import "../style/main.scss";
-
 function start() {
   const appElement = document.getElementById("app");
   render(<App />, appElement);
