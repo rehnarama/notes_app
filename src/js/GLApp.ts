@@ -120,6 +120,8 @@ export default class GLApp {
     if (oldDimensions.width !== width || oldDimensions.height !== height) {
       this.onDimensionChange.call(width, height);
     }
+
+    this.requestFrame();
   };
 
   private clear() {
