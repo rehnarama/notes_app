@@ -66,12 +66,34 @@ const ColorPicker: React.SFC<Props> = ({ onPick, className }) => {
   return (
     <div className={classNames(classes.container, className)}>
       <ColorButton color={[0, 0, 0, 1]} onPick={onPick} />
-      <ColorButton color={[1, 0, 0, 1]} onPick={onPick} />
-      <ColorButton color={[0, 1, 0, 1]} onPick={onPick} />
-      <ColorButton color={[0, 0, 1, 1]} onPick={onPick} />
-      <ColorButton color={[1, 1, 0, 1]} onPick={onPick} />
-      <ColorButton color={[1, 0, 1, 1]} onPick={onPick} />
-      <ColorButton color={[0, 1, 1, 1]} onPick={onPick} />
+      <ColorButton
+        color={[255 / 255, 255 / 255, 255 / 255, 1]}
+        onPick={onPick}
+      />
+      <ColorButton
+        color={[217 / 255, 227 / 255, 36 / 255, 1]}
+        onPick={onPick}
+      />
+      <ColorButton
+        color={[217 / 255, 227 / 255, 36 / 255, 1]}
+        onPick={onPick}
+      />
+      <ColorButton
+        color={[237 / 255, 148 / 255, 69 / 255, 1]}
+        onPick={onPick}
+      />
+      <ColorButton
+        color={[214 / 255, 73 / 255, 199 / 255, 1]}
+        onPick={onPick}
+      />
+      <ColorButton
+        color={[69 / 255, 121 / 255, 237 / 255, 1]}
+        onPick={onPick}
+      />
+      <ColorButton
+        color={[66 / 255, 227 / 255, 117 / 255, 1]}
+        onPick={onPick}
+      />
       <ColorButton color="custom" onPick={onPick} />
     </div>
   );
