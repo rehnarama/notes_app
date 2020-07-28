@@ -7,7 +7,8 @@ import GestureRecognizer, {
   PanEvent,
   ZoomEvent,
   DownEvent,
-  UpEvent
+  UpEvent,
+  HoverEvent
 } from "../GestureRecognizer";
 import { intersects } from "../Lines/LineUtils";
 import GLApp from "../GLApp";
@@ -51,6 +52,8 @@ class Painter extends React.PureComponent<Props> {
 
   selectedLines = new Map<LineId, Line>();
 
+  _canDrag: boolean = false;
+
   constructor(props: Props) {
     super(props);
 
@@ -84,6 +87,7 @@ class Painter extends React.PureComponent<Props> {
     this.gestureRecognizer.onZoom.add(this.handleOnZoom);
     this.gestureRecognizer.onDown.add(this.handleOnDown);
     this.gestureRecognizer.onUp.add(this.handleOnUp);
+    this.gestureRecognizer.onHover.add(this.handleOnHover);
 
     this.gestureRecognizer.onPan.add(this.handleOnPan);
 
@@ -118,8 +122,7 @@ class Painter extends React.PureComponent<Props> {
       }
     }
 
-    this.selectedLines.clear();
-    this.markSelectedLines();
+    this.clearSelectedLines();
   };
 
   private handleOnPan = (e: PanEvent) => {
@@ -168,6 +171,15 @@ class Painter extends React.PureComponent<Props> {
     }
   };
 
+  private handleOnHover = (e: HoverEvent) => {
+    if (this.selectedLines.size > 0) {
+      const lineId = this.detectLineAt(this.windowToLocalPoint(e.position));
+
+      // We can drag if we found something that is selected
+      this.canDrag = lineId !== undefined;
+    }
+  };
+
   private handleOnUp = (e: UpEvent) => {
     if (this.isSelecting) {
       this.selectRenderer?.loadData({ vertices: [] });
@@ -182,6 +194,9 @@ class Painter extends React.PureComponent<Props> {
         if (this.isEraseButtons(e.buttons) || this.props.eraseMode) {
           this.previousErasePoint = point;
         } else if (this.isSelectButtons(e.buttons)) {
+          // To clear old selected lines
+          this.clearSelectedLines();
+
           this.isSelecting = true;
           this.selectStart = e.position;
         } else {
@@ -209,6 +224,11 @@ class Painter extends React.PureComponent<Props> {
       }
     }
   };
+
+  private clearSelectedLines() {
+    this.selectedLines.clear();
+    this.markSelectedLines();
+  }
 
   private genBox(
     gen: LineGenerator,
@@ -295,15 +315,37 @@ class Painter extends React.PureComponent<Props> {
   eraseLine = (
     eraseSegment: [{ x: number; y: number }, { x: number; y: number }]
   ) => {
+    const id = this.detectLineBetween(eraseSegment);
+    if (id) {
+      this.props.lines.removeLine(id);
+    }
+  };
+
+  detectLineAt = (point: { x: number; y: number }, sensitivity = 5) => {
+    const top = { x: point.x, y: point.y + sensitivity };
+    const bottom = { x: point.x, y: point.y - sensitivity };
+    const left = { x: point.x - sensitivity, y: point.y };
+    const right = { x: point.x + sensitivity, y: point.y };
+
+    let lineId =
+      this.detectLineBetween([top, bottom]) ??
+      this.detectLineBetween([left, right]);
+
+    return lineId;
+  };
+
+  detectLineBetween = (
+    detectionPoints: [{ x: number; y: number }, { x: number; y: number }]
+  ) => {
     if (this.lineRenderer === null) {
-      return;
+      throw "LineRenderer is null. Perhaps something isn't initialised yet?";
     }
 
     const allLines = this.props.lines.getLines();
     for (const [id, line] of allLines) {
       if (line.points.length === 1) {
         // Can't build a segment out of one point, so let's just check if we're close
-        for (const point of eraseSegment) {
+        for (const point of detectionPoints) {
           const dx = line.points[0].x - point.x;
           const dy = line.points[0].y - point.y;
 
@@ -311,7 +353,7 @@ class Painter extends React.PureComponent<Props> {
 
           // Found a line close enough
           if (distSq < MIN_REMOVE_DISTANCE * MIN_REMOVE_DISTANCE) {
-            this.props.lines.removeLine(id);
+            return id;
           }
         }
       } else {
@@ -324,8 +366,8 @@ class Painter extends React.PureComponent<Props> {
           const second = line.points[pointIndex - 0];
           const segment: [Point, Point] = [first, second];
 
-          if (intersects(eraseSegment, segment)) {
-            this.props.lines.removeLine(id);
+          if (intersects(detectionPoints, segment)) {
+            return id;
           }
         }
       }
@@ -350,6 +392,14 @@ class Painter extends React.PureComponent<Props> {
     }
     this.props.lines.addPoint(point);
     this.previousPoint = point;
+  }
+
+  private set canDrag(value: boolean) {
+    if (value !== this._canDrag && this.targetRef.current !== null) {
+      this.targetRef.current.style.cursor = value ? "move" : "auto";
+    }
+
+    this._canDrag = value;
   }
 
   render() {

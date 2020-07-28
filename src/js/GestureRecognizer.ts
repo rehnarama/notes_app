@@ -39,19 +39,23 @@ export type DownEvent = {
   buttons: number;
 };
 export type UpEvent = DownEvent;
+export interface HoverEvent {
+  position: { x: number; y: number };
+}
 
 export default class GestureRecognizer {
   private element: HTMLElement;
 
   private panMomentum = { x: 0, y: 0 };
 
-  private prevPointerMap = new Map<number, PointerData>();
-  private pointerMap = new Map<number, PointerData>();
+  private prevPressedPointerMap = new Map<number, PointerData>();
+  private pressedPointerMap = new Map<number, PointerData>();
 
   public onZoom = new Hook<(e: ZoomEvent) => void>();
   public onPan = new Hook<(e: PanEvent) => void>();
   public onDown = new Hook<(e: DownEvent) => void>();
   public onUp = new Hook<(e: UpEvent) => void>();
+  public onHover = new Hook<(e: HoverEvent) => void>();
 
   private capture: boolean;
 
@@ -101,8 +105,8 @@ export default class GestureRecognizer {
       pagePosition: { x: e.pageX, y: e.pageY },
       time: performance.now()
     };
-    this.prevPointerMap.set(e.pointerId, data);
-    this.pointerMap.set(e.pointerId, data);
+    this.prevPressedPointerMap.set(e.pointerId, data);
+    this.pressedPointerMap.set(e.pointerId, data);
 
     this.onDown.call({
       position: { x: data.x, y: data.y },
@@ -121,10 +125,10 @@ export default class GestureRecognizer {
     }
   };
   handleOnPointerUp = (e: PointerEvent) => {
-    const wasDown = this.pointerMap.has(e.pointerId);
+    const wasDown = this.pressedPointerMap.has(e.pointerId);
 
-    this.prevPointerMap.delete(e.pointerId);
-    this.pointerMap.delete(e.pointerId);
+    this.prevPressedPointerMap.delete(e.pointerId);
+    this.pressedPointerMap.delete(e.pointerId);
 
     if (wasDown) {
       this.onUp.call({
@@ -157,8 +161,8 @@ export default class GestureRecognizer {
       return;
     }
 
-    if (this.pointerMap.has(e.pointerId)) {
-      this.pointerMap.set(e.pointerId, {
+    if (this.pressedPointerMap.has(e.pointerId)) {
+      this.pressedPointerMap.set(e.pointerId, {
         x: e.offsetX,
         y: e.offsetY,
         type: e.pointerType,
@@ -169,17 +173,18 @@ export default class GestureRecognizer {
       });
     }
 
+    this.detectHoverMove(e);
     this.detectPinchMove();
     this.detectPanMove();
 
-    for (const [pointerId, point] of this.pointerMap) {
-      this.prevPointerMap.set(pointerId, point);
+    for (const [pointerId, point] of this.pressedPointerMap) {
+      this.prevPressedPointerMap.set(pointerId, point);
     }
   };
 
   private isPinch() {
-    if (this.pointerMap.size === 2) {
-      const values = this.pointerMap.values();
+    if (this.pressedPointerMap.size === 2) {
+      const values = this.pressedPointerMap.values();
       const first = values.next().value as PointerData;
       const second = values.next().value as PointerData;
 
@@ -210,11 +215,11 @@ export default class GestureRecognizer {
 
   private detectPinchMove() {
     if (this.isPinch()) {
-      const prevValues = this.prevPointerMap.values();
+      const prevValues = this.prevPressedPointerMap.values();
       const prevFirst = prevValues.next().value as PointerData;
       const prevSecond = prevValues.next().value as PointerData;
 
-      const values = this.pointerMap.values();
+      const values = this.pressedPointerMap.values();
       const first = values.next().value as PointerData;
       const second = values.next().value as PointerData;
 
@@ -258,15 +263,25 @@ export default class GestureRecognizer {
     }
   }
 
+  private detectHoverMove(e: PointerEvent) {
+    const noButton = e.buttons === 0;
+
+    if (noButton) {
+      this.onHover.call({
+        position: { x: e.pageX, y: e.pageY }
+      });
+    }
+  }
+
   private isPan() {
-    return this.pointerMap.size === 1;
+    return this.pressedPointerMap.size === 1;
   }
 
   private detectPanMove() {
     if (this.isPan()) {
-      const prevPoint = this.prevPointerMap.values().next()
+      const prevPoint = this.prevPressedPointerMap.values().next()
         .value as PointerData;
-      const point = this.pointerMap.values().next().value as PointerData;
+      const point = this.pressedPointerMap.values().next().value as PointerData;
 
       const delta = this.getDifference(point, prevPoint);
       const pageDelta = this.getDifference(
