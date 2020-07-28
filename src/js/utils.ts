@@ -3,7 +3,7 @@ function clamp(n: number, lowerBound: number, upperBound: number) {
 }
 export { clamp };
 
-export class Hook<T extends (...args: any) => any> {
+export class Hook<T extends (...args: any) => any = (...args: any) => any> {
   private queue: T[] = [];
 
   public add(func: T) {
