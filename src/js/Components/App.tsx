@@ -6,6 +6,7 @@ import classes from "./App.module.css";
 import { FullMeshNetwork } from "network";
 import Lines from "../Lines/Lines";
 import useHash from "./useHash";
+import ShortcutRecognizer from "../ShortcutRecognizer";
 
 const SIGNALLING_URL = "wss://notes-signalling.herokuapp.com";
 const fmn = new FullMeshNetwork(SIGNALLING_URL);
@@ -13,6 +14,13 @@ const lines = new Lines(fmn);
 
 const App: React.SFC = () => {
   const { hash, setHash } = useHash();
+  const shortcutRef = React.useRef(new ShortcutRecognizer());
+  const shortcutRecognizer = shortcutRef.current;
+  React.useEffect(() => {
+    shortcutRecognizer.create("ctrl+shift+ ").add(() => {
+      console.log("ctrl+shift+space was pressed");
+    });
+  }, [ShortcutRecognizer]);
 
   React.useEffect(() => {
     if (
