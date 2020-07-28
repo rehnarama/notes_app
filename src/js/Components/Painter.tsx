@@ -11,6 +11,7 @@ import GestureRecognizer, {
 } from "../GestureRecognizer";
 import { intersects } from "../Lines/LineUtils";
 import GLApp from "../GLApp";
+import CommandManager from "../CommandManager";
 
 const MIN_REMOVE_DISTANCE = 6;
 const MIN_DISTANCE = 2;
@@ -90,6 +91,8 @@ class Painter extends React.PureComponent<Props> {
       "contextmenu",
       this.handleOnContextMenu
     );
+
+    CommandManager.Instance.on("delete", this.handleOnDelete);
   }
 
   componentDidUpdate() {
@@ -104,7 +107,20 @@ class Painter extends React.PureComponent<Props> {
       // To apply new thickness to marked lines
       this.markSelectedLines();
     }
+
+    CommandManager.Instance.off("delete", this.handleOnDelete);
   }
+
+  private handleOnDelete = () => {
+    if (this.selectedLines.size > 0) {
+      for (const id of this.selectedLines.keys()) {
+        this.props.lines.removeLine(id);
+      }
+    }
+
+    this.selectedLines.clear();
+    this.markSelectedLines();
+  };
 
   private handleOnPan = (e: PanEvent) => {
     if (this.lineRenderer) {
