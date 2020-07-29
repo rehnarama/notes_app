@@ -58,7 +58,7 @@ class Painter extends React.PureComponent<Props> {
     super(props);
 
     props.lines.onChange.add(msg => {
-      if (msg.name === "add" || msg.name === "upd") {
+      if (msg.name === "add" || msg.name === "upd" || msg.name === "mv") {
         const line = props.lines.getLines().get(msg.id);
         if (line) {
           this.lineGenerator.addLine(msg.id, line);
@@ -145,6 +145,12 @@ class Painter extends React.PureComponent<Props> {
         );
         this.selectedLines = insides;
         this.markSelectedLines();
+      } else if (this._canDrag && e.pointerType !== "scroll") {
+        for (const lineId of this.selectedLines.keys()) {
+          this.props.lines.moveLine(lineId, e.delta);
+        }
+
+        this.markSelectedLines();
       } else if (
         (this.props.cursorMode && e.pointerType !== "scroll") ||
         e.pointerType === "pen"
@@ -189,7 +195,10 @@ class Painter extends React.PureComponent<Props> {
 
   private handleOnDown = (e: DownEvent) => {
     if (this.lineRenderer) {
-      if (this.props.cursorMode || e.pointerType === "pen") {
+      if (
+        (this.props.cursorMode || e.pointerType === "pen") &&
+        !this._canDrag
+      ) {
         const point = new Point(e.position.x, e.position.y, e.pressure);
         if (this.isEraseButtons(e.buttons) || this.props.eraseMode) {
           this.previousErasePoint = point;

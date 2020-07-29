@@ -27,14 +27,24 @@ interface UpdateMessage {
   color: Color;
   thickness: number;
 }
-type Message = BeginMessage | AddMessage | RmvMessage | UpdateMessage;
+interface MoveMessage {
+  name: "mv";
+  id: LineId;
+  delta: { x: number; y: number };
+}
+type Message =
+  | BeginMessage
+  | AddMessage
+  | RmvMessage
+  | UpdateMessage
+  | MoveMessage;
 
 type SyncRequest = ["sync_request"];
 type SyncResponse = ["sync_response", Array<[LineId, Line]>];
 type SyncMessage = SyncRequest | SyncResponse;
 
 interface LineEvent {
-  name: "add" | "rmv" | "upd";
+  name: "add" | "rmv" | "upd" | "mv";
   id: LineId;
 }
 
@@ -114,6 +124,17 @@ export default class Lines {
         line.color = message.color;
         line.thickness = message.thickness;
         this.onChange.call(message);
+      }
+    } else if (message.name === "mv") {
+      const line = this.lines.get(message.id);
+      if (line) {
+        line.points.forEach(p => {
+          p.x += message.delta.x;
+          p.y += message.delta.y;
+        });
+        this.onChange.call(message);
+        this.boundingBoxes.delete(message.id);
+        this.updateBoundingBox(message.id, line.points);
       }
     }
   };
@@ -218,5 +239,13 @@ export default class Lines {
 
   public getLines = (): Map<LineId, Line> => {
     return this.lines;
+  };
+
+  public moveLine = (id: LineId, delta: { x: number; y: number }) => {
+    this.bb.bBroadcast({
+      name: "mv",
+      id,
+      delta
+    } as MoveMessage);
   };
 }
