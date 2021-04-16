@@ -147,7 +147,10 @@ class Painter extends React.PureComponent<Props> {
         this.markSelectedLines();
       } else if (this._canDrag && e.pointerType !== "scroll") {
         for (const lineId of this.selectedLines.keys()) {
-          this.props.lines.moveLine(lineId, e.delta);
+          this.props.lines.moveLine(lineId, {
+            x: e.delta.x / this.lineRenderer.zoom,
+            y: e.delta.y / this.lineRenderer.zoom
+          });
         }
 
         this.markSelectedLines();
