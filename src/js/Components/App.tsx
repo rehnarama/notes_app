@@ -4,19 +4,27 @@ import { Color } from "../Lines/LineRenderer";
 import Toolbar from "./Toolbar";
 import classes from "./App.module.css";
 import { FullMeshNetwork } from "network";
-import Lines from "../Lines/Lines";
-import useHash from "./useHash";
+import Lines from "../Data/Lines/Lines";
+import useHash from "../Hooks/useHash";
 import ShortcutRecognizer from "../ShortcutRecognizer";
 import CommandManager from "../CommandManager";
+import UserListContainer from "./UserList/UserListContainer";
+import UserList from "../Data/Users/UserList";
+import { Provider as DataProvider } from "../Data/DataContext";
 
 const SIGNALLING_URL = "wss://notes-signalling.herokuapp.com";
-const fmn = new FullMeshNetwork(SIGNALLING_URL);
-const lines = new Lines(fmn);
 
-const App: React.SFC = () => {
+const App: React.FC = () => {
   const { hash, setHash } = useHash();
+  const fmnRef = React.useRef(new FullMeshNetwork(SIGNALLING_URL));
+  const linesRef = React.useRef(new Lines(fmnRef.current));
+  const userListRef = React.useRef(new UserList(fmnRef.current));
   const shortcutRef = React.useRef(new ShortcutRecognizer());
+
   const shortcutRecognizer = shortcutRef.current;
+  const fmn = fmnRef.current;
+  const userList = userListRef.current;
+  const lines = linesRef.current;
 
   /**
    * Here we bind shortcuts to commands
@@ -25,7 +33,7 @@ const App: React.SFC = () => {
     shortcutRecognizer.create("Delete").add(() => {
       CommandManager.Instance.dispatch("delete");
     });
-  }, [ShortcutRecognizer]);
+  }, [shortcutRecognizer]);
 
   React.useEffect(() => {
     if (
@@ -61,27 +69,29 @@ const App: React.SFC = () => {
   const [thickness, setThickness] = React.useState(1);
 
   return (
-    <main className={classes.main}>
-      <header>
-        <Toolbar
-          onColorChange={setColor}
-          onThicknessChange={setThickness}
-          onCursorModeChange={setCursorMode}
-          onEraseModeChange={setEraseMode}
-          thickness={thickness}
+    <DataProvider value={{ userList, lines }}>
+      <main className={classes.main}>
+        <header>
+          <Toolbar
+            onColorChange={setColor}
+            onThicknessChange={setThickness}
+            onCursorModeChange={setCursorMode}
+            onEraseModeChange={setEraseMode}
+            thickness={thickness}
+            color={color}
+            eraseMode={eraseMode}
+            cursorMode={cursorMode}
+          />
+        </header>
+        <Painter
           color={color}
+          thickness={thickness}
+          lines={lines}
           eraseMode={eraseMode}
           cursorMode={cursorMode}
         />
-      </header>
-      <Painter
-        color={color}
-        thickness={thickness}
-        lines={lines}
-        eraseMode={eraseMode}
-        cursorMode={cursorMode}
-      />
-    </main>
+      </main>
+    </DataProvider>
   );
 };
 

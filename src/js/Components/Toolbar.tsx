@@ -10,7 +10,7 @@ import ImageCheckbox from "./ImageCheckbox";
 
 import CursorModeImg from "../../images/cursormode.svg";
 import EraserModeImg from "../../images/eraser.svg";
-import useHash from "./useHash";
+import useHash from "../Hooks/useHash";
 import GLApp from "../GLApp";
 
 const chars = "abcdefghijklmnopqrstuvwxyz1234567890";

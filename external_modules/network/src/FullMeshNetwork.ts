@@ -12,6 +12,7 @@ import Connection from "./Connection";
 import INetwork from "./INetwork";
 import IConnection from "./IConnection";
 import Hook from "./Hook";
+import LoopbackConnection from "./LoopbackConnection";
 
 export default class FullMeshNetwork implements INetwork {
   private signallingUrl: string;
@@ -20,6 +21,7 @@ export default class FullMeshNetwork implements INetwork {
   private connectedPeers = new Map<number, Connection>();
 
   public localId?: number;
+  public loopback?: LoopbackConnection;
   public currentRoomId?: string;
 
   public get connections() {
@@ -51,6 +53,7 @@ export default class FullMeshNetwork implements INetwork {
 
   private handleOnAssignedPeerId: AssignedPeerIdHandler = assignedPeerId => {
     this.localId = assignedPeerId.peerId;
+    this.loopback = new LoopbackConnection(assignedPeerId.peerId);
   };
 
   private handleOnNewPeer: NewPeerHandler = async newPeer => {

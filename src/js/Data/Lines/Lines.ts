@@ -1,8 +1,8 @@
 import { INetwork, Hook, FullMeshNetwork, BasicBroadcast } from "network";
 
-import { Point, Line } from "./LineGenerator";
-import { Color } from "./LineRenderer";
-import { invLerp } from "../math";
+import { Point, Line } from "../../Lines/LineGenerator";
+import { Color } from "../../Lines/LineRenderer";
+import { invLerp } from "../../math";
 
 export type LineId = number;
 

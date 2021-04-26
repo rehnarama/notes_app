@@ -1,24 +1,17 @@
 import INetwork from "./INetwork";
 import IConnection from "./IConnection";
 import Hook from "./Hook";
+import ConnectionChannel from "./ConnectionChannel";
 
-export default class BasicBroadcast {
+export default class BasicBroadcast<T = any> {
   protected network: INetwork;
   private header: string;
 
-  private isOffline = false;
-  private offlineSendBuffer: any[] = [];
-  private offlineReceiveBuffer: any[] = [];
+  public bDeliver = new Hook<
+    (message: T, from: IConnection) => void
+  >();
 
-  /**
-   * If set to true, messages will be buffered to simulate an offline connection
-   */
-  public setOffline(isOffline: boolean) {
-    this.isOffline = isOffline;
-    if (!isOffline) {
-      this.processOfflineBuffer();
-    }
-  }
+  private channels: ConnectionChannel<T>[] = [];
 
   public constructor(network: INetwork, header = "BB") {
     this.network = network;
@@ -31,35 +24,16 @@ export default class BasicBroadcast {
   }
 
   private handleOnConnection = (connection: IConnection) => {
-    connection.onMessage.add(this.receive);
+    const channel = new ConnectionChannel<T>(connection, this.header);
+    this.channels.push(channel);
+    channel.onMessage.add(this.receive);
   };
 
-  private processOfflineBuffer() {
-    // We store the buffer localy temporarily
-    const sendBuffer = this.offlineSendBuffer;
-    const receiveBuffer = this.offlineReceiveBuffer;
-    // and create new buffer here, since broadcast/receive-function mutates
-    // the offline buffer, we don't want to reset it AFTER calling broadcast
-    this.offlineSendBuffer = [];
-    this.offlineReceiveBuffer = [];
-
-    for (const msg of sendBuffer) {
-      this.broadcast(msg);
-    }
-    for (const data of receiveBuffer) {
-      this.receive(data);
-    }
-  }
-
-  public bBroadcast(message: any) {
+  public bBroadcast(message: T) {
     // We can always basic deliver to ourself directly on broadcast
-    this.bDeliver.call(message);
-      
-    if (this.isOffline) {
-      this.offlineSendBuffer.push(message);
-    } else {
-      this.broadcast(message);
-    }
+    this.bDeliver.call(message, this.network.loopback as IConnection);
+
+    this.broadcast(message);
   }
 
   private broadcast(message: any) {
@@ -71,19 +45,9 @@ export default class BasicBroadcast {
     }
   }
 
-  private receive = (data: any) => {
-    if (this.isOffline) {
-      this.offlineReceiveBuffer.push(data);
-    } else {
-      const payload = JSON.parse(data);
-      if (Array.isArray(payload) && payload[0] === this.header) {
-        const message = payload[1];
-        this.bDeliver.call(message);
-      }
-    }
+  private receive = (data: T, from: ConnectionChannel<T>) => {
+    this.bDeliver.call(data, from.connection);
   };
-
-  public bDeliver = new Hook<(message: any) => void>();
 
   public toJSON() {
     return {};
