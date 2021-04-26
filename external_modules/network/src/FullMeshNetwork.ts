@@ -10,7 +10,7 @@ import {
 
 import Connection from "./Connection";
 import INetwork from "./INetwork";
-import IConnection from "./IConnection";
+import IConnection, { ConnectionState } from "./IConnection";
 import Hook from "./Hook";
 import LoopbackConnection from "./LoopbackConnection";
 
@@ -18,6 +18,7 @@ export default class FullMeshNetwork implements INetwork {
   private signallingUrl: string;
   private signalling: Signalling;
   private allPeers = new Map<number, Connection>();
+  private pendingPeers = new Map<number, Connection>();
   private connectedPeers = new Map<number, Connection>();
 
   public localId?: number;
@@ -27,8 +28,14 @@ export default class FullMeshNetwork implements INetwork {
   public get connections() {
     return Array.from(this.connectedPeers.values());
   }
+  public get pendingConnections() {
+    return Array.from(this.pendingPeers.values());
+  }
 
   public onConnection = new Hook<(connection: IConnection) => void>();
+  public onDisconnect = new Hook<(connection: IConnection) => void>();
+  public onPendingConnection = new Hook<(connection: IConnection) => void>();
+  public onJoinedRoom = new Hook<(localId: number) => void>();
 
   /**
    * Constructs a new network
@@ -54,6 +61,7 @@ export default class FullMeshNetwork implements INetwork {
   private handleOnAssignedPeerId: AssignedPeerIdHandler = assignedPeerId => {
     this.localId = assignedPeerId.peerId;
     this.loopback = new LoopbackConnection(assignedPeerId.peerId);
+    this.onJoinedRoom.call(assignedPeerId.peerId);
   };
 
   private handleOnNewPeer: NewPeerHandler = async newPeer => {
@@ -66,7 +74,10 @@ export default class FullMeshNetwork implements INetwork {
   private createNewConnection(peerId: number): Connection {
     const connection = new Connection(peerId);
     this.allPeers.set(peerId, connection);
+    this.pendingPeers.set(peerId, connection);
+    this.onPendingConnection.call(connection);
 
+    connection.onConnectionStateChange.add(this.handleOnConnectionStateChange);
     connection.onLocalIceCandidate.add(iceCandidate => {
       this.signalling.send(new IceCandidate(iceCandidate, peerId));
     });
@@ -74,6 +85,7 @@ export default class FullMeshNetwork implements INetwork {
     connection.onChannelOpen.add(() => {
       if (!this.connectedPeers.has(peerId)) {
         this.connectedPeers.set(peerId, connection);
+        this.connectedPeers.delete(peerId);
       }
       this.onConnection.call(connection);
     });
@@ -110,6 +122,17 @@ export default class FullMeshNetwork implements INetwork {
     }
 
     connection.addRemoteIceCandidate(iceCandidate.iceCandidate);
+  };
+
+  public handleOnConnectionStateChange = (
+    connectionState: ConnectionState,
+    sender: IConnection
+  ) => {
+    if (connectionState === "closed") {
+      this.onDisconnect.call(sender);
+      this.allPeers.delete(sender.remoteId as number);
+      this.connectedPeers.delete(sender.remoteId as number);
+    }
   };
 
   /**

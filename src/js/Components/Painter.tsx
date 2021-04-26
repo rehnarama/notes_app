@@ -198,7 +198,6 @@ class Painter extends React.PureComponent<Props> {
   };
 
   private handleOnDown = (e: DownEvent) => {
-    console.log("on down")
     if (this.lineRenderer) {
       if (
         (this.props.cursorMode || e.pointerType === "pen") &&
@@ -216,7 +215,6 @@ class Painter extends React.PureComponent<Props> {
         } else {
           this.props.lines.beginLine(this.props.color, this.props.thickness);
           this.addPoint(point);
-          console.log("beginning line")
         }
       }
     }

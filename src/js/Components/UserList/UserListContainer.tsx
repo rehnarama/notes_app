@@ -18,7 +18,7 @@ const UserListContainer: React.FC = () => {
     };
   }, [userList]);
 
-  return <UserList users={users} />;
+  return <UserList users={users} localName={userList.localName} />;
 };
 
 export default UserListContainer;

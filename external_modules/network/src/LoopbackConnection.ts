@@ -5,6 +5,9 @@ export default class LoopbackConnection implements IConnection {
   public onChannelOpen = new Hook<() => void>();
 
   public onMessage = new Hook<(message: any, sender: IConnection) => void>();
+  public onConnectionStateChange = new Hook<
+    (state: ConnectionState, sender: IConnection) => void
+  >();
 
   public remoteId?: number;
 

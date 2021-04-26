@@ -11,20 +11,16 @@ import CommandManager from "../CommandManager";
 import UserListContainer from "./UserList/UserListContainer";
 import UserList from "../Data/Users/UserList";
 import { Provider as DataProvider } from "../Data/DataContext";
+import useSingleton from "../Hooks/useSingleton";
 
 const SIGNALLING_URL = "wss://notes-signalling.herokuapp.com";
 
 const App: React.FC = () => {
   const { hash, setHash } = useHash();
-  const fmnRef = React.useRef(new FullMeshNetwork(SIGNALLING_URL));
-  const linesRef = React.useRef(new Lines(fmnRef.current));
-  const userListRef = React.useRef(new UserList(fmnRef.current));
-  const shortcutRef = React.useRef(new ShortcutRecognizer());
-
-  const shortcutRecognizer = shortcutRef.current;
-  const fmn = fmnRef.current;
-  const userList = userListRef.current;
-  const lines = linesRef.current;
+  const fmn = useSingleton(() => new FullMeshNetwork(SIGNALLING_URL));
+  const lines = useSingleton(() => new Lines(fmn));
+  const userList = useSingleton(() => new UserList(fmn));
+  const shortcutRecognizer = useSingleton(() => new ShortcutRecognizer());
 
   /**
    * Here we bind shortcuts to commands
@@ -61,7 +57,7 @@ const App: React.FC = () => {
 
       fmn.joinRoom(hash);
     }
-  }, [hash]);
+  }, [hash, lines, fmn, userList]);
 
   const [cursorMode, setCursorMode] = React.useState(true);
   const [eraseMode, setEraseMode] = React.useState(false);
@@ -82,6 +78,9 @@ const App: React.FC = () => {
             eraseMode={eraseMode}
             cursorMode={cursorMode}
           />
+          <aside style={{ float: "right" }}>
+            <UserListContainer />
+          </aside>
         </header>
         <Painter
           color={color}

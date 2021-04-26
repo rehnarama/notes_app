@@ -6,6 +6,9 @@ export class MockConnection implements IConnection {
   remoteId?: number;
   connectionState: ConnectionState = "new";
   onMessage = new Hook<(message: any, sender: IConnection) => void>();
+  onConnectionStateChange = new Hook<
+    (state: ConnectionState, sender: IConnection) => void
+  >();
 
   private peer?: MockConnection;
 
@@ -60,6 +63,9 @@ export default class MockNetwork implements INetwork {
     this.connections.push(c1);
     other.connections.push(c2);
 
+    this.onPendingConnection.call(c1);
+    other.onPendingConnection.call(c2);
+
     this.onConnection.call(c1);
     other.onConnection.call(c2);
   }
@@ -73,5 +79,7 @@ export default class MockNetwork implements INetwork {
   }
 
   connections: MockConnection[] = [];
+  pendingConnections: MockConnection[] = [];
   onConnection = new Hook<(connection: IConnection) => void>();
+  onPendingConnection = new Hook<(connection: IConnection) => void>();
 }
