@@ -1,0 +1,19 @@
+
+.userListItem {
+    border-radius: 50%;
+    background-color: hsl(100, 50%, 80%);
+    height: 50px;
+    width: 50px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+@media (prefers-color-scheme: dark) {
+  .userListItem {
+    background-color: hsl(100, 80%, 10%);
+  }
+}
+.userListItemLoading {
+    opacity: 50%;
+}

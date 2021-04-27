@@ -8,10 +8,10 @@ import Lines from "../Data/Lines/Lines";
 import useHash from "../Hooks/useHash";
 import ShortcutRecognizer from "../ShortcutRecognizer";
 import CommandManager from "../CommandManager";
-import UserListContainer from "./UserList/UserListContainer";
 import UserList from "../Data/Users/UserList";
 import { Provider as DataProvider } from "../Data/DataContext";
 import useSingleton from "../Hooks/useSingleton";
+import Drawer from "./Drawer";
 
 const SIGNALLING_URL = "wss://notes-signalling.herokuapp.com";
 
@@ -68,19 +68,18 @@ const App: React.FC = () => {
     <DataProvider value={{ userList, lines }}>
       <main className={classes.main}>
         <header>
-          <Toolbar
-            onColorChange={setColor}
-            onThicknessChange={setThickness}
-            onCursorModeChange={setCursorMode}
-            onEraseModeChange={setEraseMode}
-            thickness={thickness}
-            color={color}
-            eraseMode={eraseMode}
-            cursorMode={cursorMode}
-          />
-          <aside style={{ float: "right" }}>
-            <UserListContainer />
-          </aside>
+          <Drawer>
+            <Toolbar
+              onColorChange={setColor}
+              onThicknessChange={setThickness}
+              onCursorModeChange={setCursorMode}
+              onEraseModeChange={setEraseMode}
+              thickness={thickness}
+              color={color}
+              eraseMode={eraseMode}
+              cursorMode={cursorMode}
+            />
+          </Drawer>
         </header>
         <Painter
           color={color}

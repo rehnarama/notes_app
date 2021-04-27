@@ -14,15 +14,13 @@
     "@types/classnames": "^2.2.10",
     "classnames": "^2.2.6",
     "isomorphic-ws": "^4.0.1",
+    "network": "file:external_modules/network",
     "postcss-modules": "^1.5.0",
     "react": "^16.13.1",
     "react-dom": "^16.13.1",
     "regenerator-runtime": "^0.13.5",
+    "signalling": "file:external_modules/signalling",
     "tslib": "^1.11.1",
     "twgl.js": "^4.14.2"
-  },
-  "alias": {
-    "network": "./external_modules/network",
-    "signalling": "./external_modules/signalling"
   }
 }
