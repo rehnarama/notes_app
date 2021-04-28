@@ -1,4 +1,4 @@
-import IConnection from "./IConnection";
+import IConnection, { ConnectionState } from "./IConnection";
 import Hook from "./Hook";
 
 const DEFAULT_CONFIG: RTCConfiguration = {
@@ -14,8 +14,9 @@ export default class Connection implements IConnection {
   public onLocalIceCandidate = new Hook<
     (iceCandidate: RTCIceCandidate) => void
   >();
+
   public onConnectionStateChange = new Hook<
-    (state: RTCPeerConnectionState) => void
+    (state: ConnectionState, sender: IConnection) => void
   >();
   public onChannelOpen = new Hook<() => void>();
 
@@ -25,7 +26,7 @@ export default class Connection implements IConnection {
 
   public get connectionState() {
     if (this.pc) {
-      return this.pc.connectionState;
+      return this.pc.iceConnectionState;
     } else {
       return "new";
     }
@@ -41,12 +42,13 @@ export default class Connection implements IConnection {
 
     this.pc.onicecandidate = this.handleOnIceCandidate;
     this.pc.ondatachannel = this.handleOnDataChannel;
-    this.pc.onconnectionstatechange = this.handleOnConnectionStateChange;
+    this.pc.oniceconnectionstatechange = this.handleOnConnectionStateChange;
   }
 
   private handleOnConnectionStateChange = () => {
     if (this.pc !== undefined) {
-      this.onConnectionStateChange.call(this.pc.connectionState);
+      this.pc.iceConnectionState;
+      this.onConnectionStateChange.call(this.pc.iceConnectionState, this);
     }
   };
 

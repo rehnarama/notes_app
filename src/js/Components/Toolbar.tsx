@@ -4,14 +4,14 @@ import classes from "./Toolbar.module.css";
 import LineRenderer, { Color } from "../Lines/LineRenderer";
 import LineGenerator from "../Lines/LineGenerator";
 import FeltPen from "../Pen/FeltPen";
-import Drawer from "./Drawer";
 
 import ImageCheckbox from "./ImageCheckbox";
 
 import CursorModeImg from "../../images/cursormode.svg";
 import EraserModeImg from "../../images/eraser.svg";
-import useHash from "./useHash";
+import useHash from "../Hooks/useHash";
 import GLApp from "../GLApp";
+import UserListContainer from "./UserList/UserListContainer";
 
 const chars = "abcdefghijklmnopqrstuvwxyz1234567890";
 function randomString(length: number) {
@@ -92,7 +92,6 @@ const Toolbar: React.SFC<Props> = props => {
   };
 
   return (
-    <Drawer>
       <div className={classes.content}>
         <div className={classes.canvasPreview} ref={attachRenderer} />
         <ColorPicker
@@ -141,8 +140,9 @@ const Toolbar: React.SFC<Props> = props => {
         ) : (
           <button onClick={inviteCollaborator}>Invite Collaborator</button>
         )}
+
+        <UserListContainer />
       </div>
-    </Drawer>
   );
 };
 

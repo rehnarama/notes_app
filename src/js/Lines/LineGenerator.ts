@@ -1,6 +1,6 @@
 import interpolateLine from "./LineInterpolation";
 import Pen, { AttributeData } from "../Pen/Pen";
-import { LineId } from "./Lines";
+import { LineId } from "../Data/Lines/Lines";
 import { Color } from "./LineRenderer";
 
 const DEFAULT_PRESSURE = 0.5;

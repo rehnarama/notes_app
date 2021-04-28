@@ -2,7 +2,7 @@ import * as React from "react";
 import LineGenerator, { Point, Line } from "../Lines/LineGenerator";
 import LineRenderer, { Color } from "../Lines/LineRenderer";
 import FeltPen from "../Pen/FeltPen";
-import Lines, { Box, LineId } from "../Lines/Lines";
+import Lines, { Box, LineId } from "../Data/Lines/Lines";
 import GestureRecognizer, {
   PanEvent,
   ZoomEvent,
@@ -77,6 +77,7 @@ class Painter extends React.PureComponent<Props> {
     if (this.targetRef.current === null) {
       throw new Error("Could not find target element");
     }
+
 
     const glApp = new GLApp(this.targetRef.current);
     this.selectedLinesRenderer = new LineRenderer(glApp);

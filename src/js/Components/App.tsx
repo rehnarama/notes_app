@@ -4,19 +4,42 @@ import { Color } from "../Lines/LineRenderer";
 import Toolbar from "./Toolbar";
 import classes from "./App.module.css";
 import { FullMeshNetwork } from "network";
-import Lines from "../Lines/Lines";
-import useHash from "./useHash";
+import Lines from "../Data/Lines/Lines";
+import useHash from "../Hooks/useHash";
 import ShortcutRecognizer from "../ShortcutRecognizer";
 import CommandManager from "../CommandManager";
+import UserList from "../Data/Users/UserList";
+import { Provider as DataProvider } from "../Data/DataContext";
+import useSingleton from "../Hooks/useSingleton";
+import Drawer from "./Drawer";
 
 const SIGNALLING_URL = "wss://notes-signalling.herokuapp.com";
-const fmn = new FullMeshNetwork(SIGNALLING_URL);
-const lines = new Lines(fmn);
 
-const App: React.SFC = () => {
+const App: React.FC = () => {
   const { hash, setHash } = useHash();
-  const shortcutRef = React.useRef(new ShortcutRecognizer());
-  const shortcutRecognizer = shortcutRef.current;
+  const [rtcToken, setRtcToken] = React.useState<RTCConfiguration>();
+  const fmn = useSingleton(() => new FullMeshNetwork(SIGNALLING_URL));
+  const lines = useSingleton(() => new Lines(fmn));
+  const userList = useSingleton(() => new UserList(fmn));
+  const shortcutRecognizer = useSingleton(() => new ShortcutRecognizer());
+
+  React.useEffect(() => {
+    async function fetchToken() {
+      const response = await fetch(
+        "https://q4q0hqrcx3.execute-api.eu-north-1.amazonaws.com/twilio-turn-get-token",
+        { mode: "cors" }
+      );
+
+      const token: RTCConfiguration = await response.json();
+      setRtcToken(token);
+    }
+
+    fetchToken();
+  }, []);
+
+  React.useEffect(() => {
+    fmn.rtcConfiguration = rtcToken;
+  }, [rtcToken]);
 
   /**
    * Here we bind shortcuts to commands
@@ -25,10 +48,11 @@ const App: React.SFC = () => {
     shortcutRecognizer.create("Delete").add(() => {
       CommandManager.Instance.dispatch("delete");
     });
-  }, [ShortcutRecognizer]);
+  }, [shortcutRecognizer]);
 
   React.useEffect(() => {
     if (
+      rtcToken !== undefined &&
       hash.length > 0 &&
       lines !== null &&
       fmn !== null &&
@@ -53,7 +77,7 @@ const App: React.SFC = () => {
 
       fmn.joinRoom(hash);
     }
-  }, [hash]);
+  }, [hash, lines, fmn, userList, rtcToken]);
 
   const [cursorMode, setCursorMode] = React.useState(true);
   const [eraseMode, setEraseMode] = React.useState(false);
@@ -61,27 +85,31 @@ const App: React.SFC = () => {
   const [thickness, setThickness] = React.useState(1);
 
   return (
-    <main className={classes.main}>
-      <header>
-        <Toolbar
-          onColorChange={setColor}
-          onThicknessChange={setThickness}
-          onCursorModeChange={setCursorMode}
-          onEraseModeChange={setEraseMode}
-          thickness={thickness}
+    <DataProvider value={{ userList, lines }}>
+      <main className={classes.main}>
+        <header>
+          <Drawer>
+            <Toolbar
+              onColorChange={setColor}
+              onThicknessChange={setThickness}
+              onCursorModeChange={setCursorMode}
+              onEraseModeChange={setEraseMode}
+              thickness={thickness}
+              color={color}
+              eraseMode={eraseMode}
+              cursorMode={cursorMode}
+            />
+          </Drawer>
+        </header>
+        <Painter
           color={color}
+          thickness={thickness}
+          lines={lines}
           eraseMode={eraseMode}
           cursorMode={cursorMode}
         />
-      </header>
-      <Painter
-        color={color}
-        thickness={thickness}
-        lines={lines}
-        eraseMode={eraseMode}
-        cursorMode={cursorMode}
-      />
-    </main>
+      </main>
+    </DataProvider>
   );
 };
 
