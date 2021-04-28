@@ -17,7 +17,7 @@ const SIGNALLING_URL = "wss://notes-signalling.herokuapp.com";
 
 const App: React.FC = () => {
   const { hash, setHash } = useHash();
-  const [rtcToken, setRtcToken] = React.useState<RTCConfiguration>();
+  const [rtcToken, setRtcToken] = React.useState<any>();
   const fmn = useSingleton(() => new FullMeshNetwork(SIGNALLING_URL));
   const lines = useSingleton(() => new Lines(fmn));
   const userList = useSingleton(() => new UserList(fmn));
@@ -38,7 +38,9 @@ const App: React.FC = () => {
   }, []);
 
   React.useEffect(() => {
-    fmn.rtcConfiguration = rtcToken;
+    if (rtcToken !== undefined) {
+      fmn.rtcConfiguration = { iceServers: rtcToken.ice_servers };
+    }
   }, [rtcToken]);
 
   /**
