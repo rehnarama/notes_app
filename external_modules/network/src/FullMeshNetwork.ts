@@ -87,7 +87,7 @@ export default class FullMeshNetwork implements INetwork {
     connection.onChannelOpen.add(() => {
       if (!this.connectedPeers.has(peerId)) {
         this.connectedPeers.set(peerId, connection);
-        this.connectedPeers.delete(peerId);
+        this.pendingPeers.delete(peerId);
       }
       this.onConnection.call(connection);
     });
