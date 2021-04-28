@@ -15,6 +15,7 @@ import Hook from "./Hook";
 import LoopbackConnection from "./LoopbackConnection";
 
 export default class FullMeshNetwork implements INetwork {
+  public rtcConfiguration?: RTCConfiguration;
   private signallingUrl: string;
   private signalling: Signalling;
   private allPeers = new Map<number, Connection>();
@@ -42,7 +43,8 @@ export default class FullMeshNetwork implements INetwork {
    * @param signallingUrl The url of the signalling server, e.g.
    *        ws://localhost:8080
    */
-  constructor(signallingUrl: string) {
+  constructor(signallingUrl: string, rtcConfiguration?: RTCConfiguration) {
+    this.rtcConfiguration = rtcConfiguration;
     this.signallingUrl = signallingUrl;
     this.signalling = new Signalling(
       this.handleOnAssignedPeerId,

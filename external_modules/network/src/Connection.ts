@@ -43,8 +43,6 @@ export default class Connection implements IConnection {
     this.pc.onicecandidate = this.handleOnIceCandidate;
     this.pc.ondatachannel = this.handleOnDataChannel;
     this.pc.oniceconnectionstatechange = this.handleOnConnectionStateChange;
-    // this.pc.onconnectionstatechange = this.handleOnConnectionStateChange;
-    console.log("event etc");
   }
 
   private handleOnConnectionStateChange = () => {

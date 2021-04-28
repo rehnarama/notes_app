@@ -17,10 +17,29 @@ const SIGNALLING_URL = "wss://notes-signalling.herokuapp.com";
 
 const App: React.FC = () => {
   const { hash, setHash } = useHash();
+  const [rtcToken, setRtcToken] = React.useState<RTCConfiguration>();
   const fmn = useSingleton(() => new FullMeshNetwork(SIGNALLING_URL));
   const lines = useSingleton(() => new Lines(fmn));
   const userList = useSingleton(() => new UserList(fmn));
   const shortcutRecognizer = useSingleton(() => new ShortcutRecognizer());
+
+  React.useEffect(() => {
+    async function fetchToken() {
+      const response = await fetch(
+        "https://q4q0hqrcx3.execute-api.eu-north-1.amazonaws.com/twilio-turn-get-token",
+        { mode: "cors" }
+      );
+
+      const token: RTCConfiguration = await response.json();
+      setRtcToken(token);
+    }
+
+    fetchToken();
+  }, []);
+
+  React.useEffect(() => {
+    fmn.rtcConfiguration = rtcToken;
+  }, [rtcToken]);
 
   /**
    * Here we bind shortcuts to commands
@@ -33,6 +52,7 @@ const App: React.FC = () => {
 
   React.useEffect(() => {
     if (
+      rtcToken !== undefined &&
       hash.length > 0 &&
       lines !== null &&
       fmn !== null &&
@@ -57,7 +77,7 @@ const App: React.FC = () => {
 
       fmn.joinRoom(hash);
     }
-  }, [hash, lines, fmn, userList]);
+  }, [hash, lines, fmn, userList, rtcToken]);
 
   const [cursorMode, setCursorMode] = React.useState(true);
   const [eraseMode, setEraseMode] = React.useState(false);
