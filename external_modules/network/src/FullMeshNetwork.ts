@@ -74,7 +74,7 @@ export default class FullMeshNetwork implements INetwork {
   };
 
   private createNewConnection(peerId: number): Connection {
-    const connection = new Connection(peerId);
+    const connection = new Connection(peerId, this.rtcConfiguration);
     this.allPeers.set(peerId, connection);
     this.pendingPeers.set(peerId, connection);
     this.onPendingConnection.call(connection);
