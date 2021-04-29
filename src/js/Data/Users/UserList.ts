@@ -40,14 +40,15 @@ export default class UserList {
   }
 
   private init() {
-    for (const connection of this.fmn.connections) {
-      this.onConnection(connection);
-    }
-    this.fmn.onConnection.add(this.onConnection);
     for (const connection of this.fmn.pendingConnections) {
       this.onConnection(connection);
     }
     this.fmn.onPendingConnection.add(this.onPendingConnection);
+
+    for (const connection of this.fmn.connections) {
+      this.onConnection(connection);
+    }
+    this.fmn.onConnection.add(this.onConnection);
   }
 
   private onPendingConnection = (connection: IConnection) => {
