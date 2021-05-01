@@ -8,11 +8,14 @@ import GestureRecognizer, {
   ZoomEvent,
   DownEvent,
   UpEvent,
-  HoverEvent
+  HoverEvent,
+  MoveEvent
 } from "../GestureRecognizer";
 import { intersects } from "../Lines/LineUtils";
 import GLApp from "../GLApp";
 import CommandManager from "../CommandManager";
+import PointersData from "../Data/Pointers/Pointers";
+import Pointers from "./Pointers";
 
 const MIN_REMOVE_DISTANCE = 6;
 const MIN_DISTANCE = 2;
@@ -23,6 +26,7 @@ interface Props {
   color: Color;
   thickness: number;
   lines: Lines;
+  pointers: PointersData;
   cursorMode?: boolean;
   eraseMode?: boolean;
 }
@@ -78,7 +82,6 @@ class Painter extends React.PureComponent<Props> {
       throw new Error("Could not find target element");
     }
 
-
     const glApp = new GLApp(this.targetRef.current);
     this.selectedLinesRenderer = new LineRenderer(glApp);
     this.lineRenderer = new LineRenderer(glApp);
@@ -89,6 +92,7 @@ class Painter extends React.PureComponent<Props> {
     this.gestureRecognizer.onDown.add(this.handleOnDown);
     this.gestureRecognizer.onUp.add(this.handleOnUp);
     this.gestureRecognizer.onHover.add(this.handleOnHover);
+    this.gestureRecognizer.onMove.add(this.handleOnMove);
 
     this.gestureRecognizer.onPan.add(this.handleOnPan);
 
@@ -99,6 +103,10 @@ class Painter extends React.PureComponent<Props> {
 
     CommandManager.Instance.on("delete", this.handleOnDelete);
   }
+
+  handleOnMove = (e: MoveEvent) => {
+    this.props.pointers.updatePoint(e.position);
+  };
 
   componentDidUpdate() {
     for (const [lineId, _] of this.selectedLines) {
@@ -417,13 +425,17 @@ class Painter extends React.PureComponent<Props> {
 
   render() {
     return (
-      <div
-        ref={this.targetRef}
-        style={{
-          touchAction: "none",
-          overflow: "hidden"
-        }}
-      />
+      <div style={{ position: "relative", height: "100%" }}>
+        <div
+          ref={this.targetRef}
+          style={{
+            touchAction: "none",
+            overflow: "hidden",
+            height: "100%"
+          }}
+        />
+        <Pointers pointersData={this.props.pointers} />
+      </div>
     );
   }
 }
