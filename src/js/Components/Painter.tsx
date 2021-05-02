@@ -14,7 +14,7 @@ import GestureRecognizer, {
 import { intersects } from "../Lines/LineUtils";
 import GLApp from "../GLApp";
 import CommandManager from "../CommandManager";
-import PointersData from "../Data/Pointers/Pointers";
+import PointersData from "../Data/Pointers/PointersData";
 import Pointers from "./Pointers";
 
 const MIN_REMOVE_DISTANCE = 6;

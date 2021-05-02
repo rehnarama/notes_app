@@ -32,21 +32,21 @@ export default class PointersData {
     this.bb.bDeliver.add(this.onMessage);
   }
 
-  private onMessage = (message: Message, _from: IConnection) => {
-    if (message.type === "update") {
+  private onMessage = (message: Message, from: IConnection) => {
+    if (message.type === "update" && from.remoteId !== this.fmn.localId) {
       this.pointerMap.set(message.id, message.point);
-      this.onPointerMapUpdated.callThrottled(200);
+      this.onPointerMapUpdated.call();
     }
   };
 
   public updatePoint = (point: Point) => {
-    if (!this.fmn.localId) {
+    if (this.fmn.localId === undefined) {
       return;
     }
 
     const message: UpdateMessage = {
       type: "update",
-      id: this.fmn.localId?.toString(),
+      id: this.fmn.localId.toString(),
       point
     };
     this.bb.bBroadcast(message);
