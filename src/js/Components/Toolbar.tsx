@@ -41,7 +41,8 @@ const Toolbar: React.SFC<Props> = props => {
   };
   let previewRenderer = React.useRef<LineRenderer | null>(null);
   const attachRenderer = React.useCallback((node: HTMLDivElement) => {
-    previewRenderer.current = new LineRenderer(new GLApp(node));
+    const glApp = new GLApp(node);
+    previewRenderer.current = glApp.addProgram(new LineRenderer(glApp));
   }, []);
 
   React.useEffect(() => {
@@ -71,10 +72,10 @@ const Toolbar: React.SFC<Props> = props => {
     }
     updatePreview();
 
-    previewRenderer.current?.glApp.onDimensionChange.add(updatePreview);
+    previewRenderer.current?.glApp.onSizeChange.add(updatePreview);
 
     return () => {
-      previewRenderer.current?.glApp.onDimensionChange.remove(updatePreview);
+      previewRenderer.current?.glApp.onSizeChange.remove(updatePreview);
     };
   }, [props.color, props.thickness, previewRenderer.current]);
 
@@ -92,57 +93,57 @@ const Toolbar: React.SFC<Props> = props => {
   };
 
   return (
-      <div className={classes.content}>
-        <div className={classes.canvasPreview} ref={attachRenderer} />
-        <ColorPicker
-          onPick={props.onColorChange}
-          className={classes.colorPicker}
-        />
-        <input
-          type="range"
-          min="0.1"
-          max="3"
-          step="0.2"
-          value={props.thickness}
-          onChange={onThicknessChange}
-        ></input>
-        <div>
-          <ImageCheckbox
-            src={CursorModeImg}
-            id="mode-cursor-mobile"
-            width={32}
-            height={32}
-            checked={props.cursorMode}
-            onChange={onCursorModeChange}
-            className={classes.cursorCheckbox}
-          ></ImageCheckbox>
-          <ImageCheckbox
-            src={EraserModeImg}
-            id="mode-eraser-mobile"
-            width={32}
-            height={32}
-            checked={props.eraseMode}
-            onChange={onEraseModeChange}
-          ></ImageCheckbox>
-        </div>
-        {hash.length > 0 ? (
-          <React.Fragment>
-            <label>Invite URL:</label>
-            <input
-              type="text"
-              value={location.href}
-              readOnly
-              style={{
-                width: `${location.href.length}ch`
-              }}
-            />
-          </React.Fragment>
-        ) : (
-          <button onClick={inviteCollaborator}>Invite Collaborator</button>
-        )}
-
-        <UserListContainer />
+    <div className={classes.content}>
+      <div className={classes.canvasPreview} ref={attachRenderer} />
+      <ColorPicker
+        onPick={props.onColorChange}
+        className={classes.colorPicker}
+      />
+      <input
+        type="range"
+        min="0.1"
+        max="3"
+        step="0.2"
+        value={props.thickness}
+        onChange={onThicknessChange}
+      ></input>
+      <div>
+        <ImageCheckbox
+          src={CursorModeImg}
+          id="mode-cursor-mobile"
+          width={32}
+          height={32}
+          checked={props.cursorMode}
+          onChange={onCursorModeChange}
+          className={classes.cursorCheckbox}
+        ></ImageCheckbox>
+        <ImageCheckbox
+          src={EraserModeImg}
+          id="mode-eraser-mobile"
+          width={32}
+          height={32}
+          checked={props.eraseMode}
+          onChange={onEraseModeChange}
+        ></ImageCheckbox>
       </div>
+      {hash.length > 0 ? (
+        <React.Fragment>
+          <label>Invite URL:</label>
+          <input
+            type="text"
+            value={location.href}
+            readOnly
+            style={{
+              width: `${location.href.length}ch`
+            }}
+          />
+        </React.Fragment>
+      ) : (
+        <button onClick={inviteCollaborator}>Invite Collaborator</button>
+      )}
+
+      <UserListContainer />
+    </div>
   );
 };
 

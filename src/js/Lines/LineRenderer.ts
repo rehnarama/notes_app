@@ -1,6 +1,7 @@
 import * as twgl from "twgl.js";
 import { AttributeData } from "../Pen/Pen";
 import GLApp from "../GLApp";
+import GLProgram from "../GLProgram";
 
 const MAX_RESOLUTION = 1920;
 
@@ -34,13 +35,7 @@ void main(void) {
   gl_FragColor = v_color;
 }`;
 
-export default class LineRenderer {
-  private gl: WebGLRenderingContext;
-  private _glApp: GLApp;
-  public get glApp() {
-    return this._glApp;
-  }
-
+export default class LineRenderer extends GLProgram {
   public _position = { x: 0, y: 0 };
   public set position(value: { x: number; y: number }) {
     this._position = value;
@@ -67,66 +62,77 @@ export default class LineRenderer {
     color: 0
   };
 
+  private program: twgl.ProgramInfo;
+
   constructor(glApp: GLApp) {
-    this._glApp = glApp;
-    this.gl = this._glApp.gl;
-    this.initProgram();
-
-    this.updateSize();
-    this.glApp.onDimensionChange.add(this.updateSize);
-    this.glApp.onScaleChange.add(this.updateSize);
-
-    this.glApp.onDraw.add(this.draw);
+    super(glApp);
+    this.program = this.initProgram(glApp);
   }
 
-  private updateSize = () => {
+  // constructor(glApp: GLApp) {
+  //   this._glApp = glApp;
+  //   this.gl = this._glApp.gl;
+  //   this.initProgram();
+
+  //   this.updateSize();
+  //   this.glApp.onDimensionChange.add(this.updateSize);
+  //   this.glApp.onScaleChange.add(this.updateSize);
+
+  //   this.glApp.onDraw.add(this.draw);
+  // }
+
+  private updateSize = (app: GLApp) => {
     if (this.programInfo) {
-      this.gl.useProgram(this.programInfo.program);
+      this.useProgram(this.programInfo);
+
       twgl.setUniforms(this.programInfo, {
         u_resolution: [
-          this.glApp.width * this.glApp.actualScale,
-          this.glApp.height * this.glApp.actualScale
+          app.width * app.actualScale,
+          app.height * app.actualScale
         ],
         u_scale: this.glApp.actualScale
       });
     }
   };
 
-  private initProgram = () => {
-    this.programInfo = twgl.createProgramInfo(this.gl, [vsSource, fsSource]);
-    this.gl.useProgram(this.programInfo.program);
+  public initProgram = (app: GLApp) => {
+    this.programInfo = this.createProgramInfo(vsSource, fsSource);
 
-    this.uniformLocations.position = this.gl.getAttribLocation(
+    this.useProgram(this.programInfo);
+
+    this.uniformLocations.position = this.glApp.gl.getAttribLocation(
       this.programInfo.program,
       "a_position"
     );
-    this.uniformLocations.color = this.gl.getAttribLocation(
+    this.uniformLocations.color = this.glApp.gl.getAttribLocation(
       this.programInfo.program,
       "a_color"
     );
 
-    this.vertexBuffer = this.gl.createBuffer();
+    this.vertexBuffer = this.glApp.gl.createBuffer();
+
+    return this.programInfo;
   };
 
-  private bindBuffers() {
+  private bindBuffers(app: GLApp) {
     if (this.programInfo) {
-      this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vertexBuffer);
+      app.gl.bindBuffer(this.glApp.gl.ARRAY_BUFFER, this.vertexBuffer);
 
-      this.gl.enableVertexAttribArray(this.uniformLocations.position);
-      this.gl.enableVertexAttribArray(this.uniformLocations.color);
+      app.gl.enableVertexAttribArray(this.uniformLocations.position);
+      app.gl.enableVertexAttribArray(this.uniformLocations.color);
 
-      this.gl.vertexAttribPointer(
+      app.gl.vertexAttribPointer(
         this.uniformLocations.position,
         2,
-        this.gl.FLOAT,
+        this.glApp.gl.FLOAT,
         false,
         4 * 6,
         0
       );
-      this.gl.vertexAttribPointer(
+      app.gl.vertexAttribPointer(
         this.uniformLocations.color,
         4,
-        this.gl.FLOAT,
+        this.glApp.gl.FLOAT,
         false,
         4 * 6,
         4 * 2
@@ -156,18 +162,19 @@ export default class LineRenderer {
     this.glApp.requestFrame();
   };
 
-  public draw = () => {
-    if (this.gl === null || this.programInfo === null || this.data === null) {
+  public draw = (app: GLApp) => {
+    if (this.programInfo === null || this.data === null) {
       return;
     }
 
-    this.gl.useProgram(this.programInfo.program);
-    this.bindBuffers();
+    this.useProgram(this.program)
+    this.bindBuffers(app);
+    this.updateSize(app);
 
-    this.gl.bufferData(
-      this.gl.ARRAY_BUFFER,
+    app.gl.bufferData(
+      this.glApp.gl.ARRAY_BUFFER,
       new Float32Array(this.data.vertices),
-      this.gl.STREAM_DRAW
+      this.glApp.gl.STREAM_DRAW
     );
     const trianglesToDraw = this.data.vertices.length / 6;
 
@@ -176,6 +183,6 @@ export default class LineRenderer {
       u_zoom: this.zoom
     });
 
-    this.gl.drawArrays(this.gl.TRIANGLES, 0, trianglesToDraw);
+    app.gl.drawArrays(app.gl.TRIANGLES, 0, trianglesToDraw);
   };
 }

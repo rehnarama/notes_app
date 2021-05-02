@@ -1,4 +1,6 @@
 import { Hook } from "./utils";
+import GLProgram from "./GLProgram";
+import * as twgl from "twgl.js";
 
 const MAX_RESOLUTION = 1920;
 
@@ -44,15 +46,17 @@ export default class GLApp {
     return this.dimensions.height;
   }
 
-  public onDimensionChange = new Hook<
-    (width: number, height: number) => void
+  public onSizeChange = new Hook<
+    (width: number, height: number, scale: number) => void
   >();
-  public onScaleChange = new Hook<(scale: number) => void>();
-  public onDraw = new Hook<() => void>();
+  // public onScaleChange = new Hook<(scale: number) => void>();
+  // public onDraw = new Hook<() => void>();
 
   public getContext() {
     return this._gl;
   }
+
+  private programs: GLProgram[] = [];
 
   constructor(targetElement: HTMLElement) {
     this.targetElement = targetElement;
@@ -64,6 +68,11 @@ export default class GLApp {
     this.updateSize(); // Have to establish size at least once before rendering can occur!
 
     window.addEventListener("resize", this.updateSize);
+  }
+
+  public addProgram<T extends GLProgram>(program: T) {
+    this.programs.push(program);
+    return program;
   }
 
   private guessScale() {
@@ -114,11 +123,15 @@ export default class GLApp {
 
     this._dimensions = { width: elemWidth, height: elemHeight };
 
-    if (oldScale !== this.actualScale) {
-      this.onScaleChange.call(this.actualScale);
-    }
-    if (oldDimensions.width !== width || oldDimensions.height !== height) {
-      this.onDimensionChange.call(width, height);
+    // if () {
+    //   this.onScaleChange.call(this.actualScale);
+    // }
+    if (
+      oldDimensions.width !== width ||
+      oldDimensions.height !== height ||
+      oldScale !== this.actualScale
+    ) {
+      this.onSizeChange.call(width, height, this.actualScale);
     }
 
     this.requestFrame();
@@ -140,7 +153,10 @@ export default class GLApp {
   public onFrame = () => {
     this.isDirty = false;
     this.clear();
-    this.onDraw.call();
+
+    for (const program of this.programs) {
+      program.draw(this);
+    }
   };
 
   public dispose() {

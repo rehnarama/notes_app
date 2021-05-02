@@ -83,9 +83,9 @@ class Painter extends React.PureComponent<Props> {
     }
 
     const glApp = new GLApp(this.targetRef.current);
-    this.selectedLinesRenderer = new LineRenderer(glApp);
-    this.lineRenderer = new LineRenderer(glApp);
-    this.selectRenderer = new LineRenderer(glApp);
+    this.selectedLinesRenderer = glApp.addProgram(new LineRenderer(glApp));
+    this.lineRenderer = glApp.addProgram(new LineRenderer(glApp));
+    this.selectRenderer = glApp.addProgram(new LineRenderer(glApp));
 
     this.gestureRecognizer = new GestureRecognizer(this.targetRef.current);
     this.gestureRecognizer.onZoom.add(this.handleOnZoom);
