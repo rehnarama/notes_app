@@ -53,8 +53,10 @@ export default class LineRenderer extends GLProgram {
     return this._zoom;
   }
 
-  private vertexBuffer: WebGLBuffer | null = null;
+  private vao: WebGLVertexArrayObject | null = null;
+  private vbo: WebGLBuffer | null = null;
   private data: AttributeData | null = null;
+  private isDirty = false;
 
   private programInfo: twgl.ProgramInfo | null = null;
   private uniformLocations = {
@@ -109,14 +111,19 @@ export default class LineRenderer extends GLProgram {
       "a_color"
     );
 
-    this.vertexBuffer = this.glApp.gl.createBuffer();
+    this.setupBuffers(app);
 
     return this.programInfo;
   };
 
-  private bindBuffers(app: GLApp) {
+  private setupBuffers(app: GLApp) {
     if (this.programInfo) {
-      app.gl.bindBuffer(this.glApp.gl.ARRAY_BUFFER, this.vertexBuffer);
+      this.vao = this.glApp.gl.createVertexArray();
+
+      app.gl.bindVertexArray(this.vao);
+
+      this.vbo = this.glApp.gl.createBuffer();
+      app.gl.bindBuffer(this.glApp.gl.ARRAY_BUFFER, this.vbo);
 
       app.gl.enableVertexAttribArray(this.uniformLocations.position);
       app.gl.enableVertexAttribArray(this.uniformLocations.color);
@@ -159,6 +166,7 @@ export default class LineRenderer extends GLProgram {
 
   public loadData = (data: AttributeData) => {
     this.data = data;
+    this.isDirty = true;
     this.glApp.requestFrame();
   };
 
@@ -167,15 +175,19 @@ export default class LineRenderer extends GLProgram {
       return;
     }
 
-    this.useProgram(this.program)
-    this.bindBuffers(app);
+    this.useProgram(this.program);
+    app.gl.bindVertexArray(this.vao);
     this.updateSize(app);
 
-    app.gl.bufferData(
-      this.glApp.gl.ARRAY_BUFFER,
-      new Float32Array(this.data.vertices),
-      this.glApp.gl.STREAM_DRAW
-    );
+    if (this.isDirty) {
+      app.gl.bindBuffer(this.glApp.gl.ARRAY_BUFFER, this.vbo);
+      app.gl.bufferData(
+        this.glApp.gl.ARRAY_BUFFER,
+        new Float32Array(this.data.vertices),
+        this.glApp.gl.STREAM_DRAW
+      );
+      this.isDirty = false;
+    }
     const trianglesToDraw = this.data.vertices.length / 6;
 
     twgl.setUniforms(this.programInfo, {

@@ -7,7 +7,7 @@ const MAX_RESOLUTION = 1920;
 export default class GLApp {
   private targetElement: HTMLElement;
   private _canvas: HTMLCanvasElement;
-  private _gl: WebGLRenderingContext;
+  private _gl: WebGL2RenderingContext;
   public get gl() {
     return this._gl;
   }
@@ -64,7 +64,7 @@ export default class GLApp {
     this._canvas = document.createElement("canvas");
     this.targetElement.appendChild(this._canvas);
 
-    this._gl = this._canvas.getContext("webgl") as WebGLRenderingContext;
+    this._gl = this._canvas.getContext("webgl2") as WebGL2RenderingContext;
     this.updateSize(); // Have to establish size at least once before rendering can occur!
 
     window.addEventListener("resize", this.updateSize);
@@ -78,18 +78,20 @@ export default class GLApp {
   private guessScale() {
     if (this.requestedScale === "auto") {
       const dpr = window.devicePixelRatio;
-      const resolution =
-        Math.max(
-          this.targetElement.offsetWidth,
-          this.targetElement.offsetHeight
-        ) * dpr;
+      return dpr;
 
-      if (resolution / MAX_RESOLUTION > 1) {
-        // Performance is too bad if we use such a high resolution, scale down to a reasonable level
-        return dpr / (resolution / MAX_RESOLUTION);
-      } else {
-        return dpr;
-      }
+      // const resolution =
+      //   Math.max(
+      //     this.targetElement.offsetWidth,
+      //     this.targetElement.offsetHeight
+      //   ) * dpr;
+
+      // if (resolution / MAX_RESOLUTION > 1) {
+      //   // Performance is too bad if we use such a high resolution, scale down to a reasonable level
+      //   return dpr / (resolution / MAX_RESOLUTION);
+      // } else {
+      //   return dpr;
+      // }
     } else {
       return this.requestedScale;
     }
@@ -154,9 +156,12 @@ export default class GLApp {
     this.isDirty = false;
     this.clear();
 
+    const before = performance.now();
     for (const program of this.programs) {
       program.draw(this);
     }
+    const after = performance.now();
+    console.log(after - before);
   };
 
   public dispose() {
