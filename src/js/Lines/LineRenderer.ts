@@ -7,13 +7,13 @@ const MAX_RESOLUTION = 1920;
 
 export type Color = [number, number, number, number];
 
-const vsSource = `
+const vsSource = `#version 300 es
 precision highp float;
 
-attribute vec4 a_position;
-attribute vec4 a_color;
+in vec4 a_position;
+in vec4 a_color;
 
-varying vec4 v_color;
+out vec4 v_color;
 
 uniform vec2 u_resolution; 
 uniform float u_scale;
@@ -26,13 +26,14 @@ void main() {
   v_color = a_color;
 }
   `;
-const fsSource = `
+const fsSource = `#version 300 es
 precision highp float;
 
-varying vec4 v_color;
+in vec4 v_color;
+out vec4 output_color;
 
 void main(void) {
-  gl_FragColor = v_color;
+  output_color = v_color;
 }`;
 
 export default class LineRenderer extends GLProgram {
