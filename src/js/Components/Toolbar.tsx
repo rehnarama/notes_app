@@ -12,6 +12,7 @@ import EraserModeImg from "../../images/eraser.svg";
 import useHash from "../Hooks/useHash";
 import GLApp from "../GLApp";
 import UserListContainer from "./UserList/UserListContainer";
+import Canvas from "../Rendering/Canvas";
 
 const chars = "abcdefghijklmnopqrstuvwxyz1234567890";
 function randomString(length: number) {
@@ -42,7 +43,9 @@ const Toolbar: React.SFC<Props> = props => {
   let previewRenderer = React.useRef<LineRenderer | null>(null);
   const attachRenderer = React.useCallback((node: HTMLDivElement) => {
     const glApp = new GLApp(node);
-    previewRenderer.current = glApp.addProgram(new LineRenderer(glApp));
+    previewRenderer.current = glApp.addProgram(
+      new LineRenderer(glApp, new Canvas(glApp))
+    );
   }, []);
 
   React.useEffect(() => {

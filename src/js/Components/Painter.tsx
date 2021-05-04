@@ -16,6 +16,7 @@ import GLApp from "../GLApp";
 import CommandManager from "../CommandManager";
 import PointersData from "../Data/Pointers/PointersData";
 import Pointers from "./Pointers";
+import Canvas from "../Rendering/Canvas";
 
 const MIN_REMOVE_DISTANCE = 6;
 const MIN_DISTANCE = 2;
@@ -50,6 +51,7 @@ class Painter extends React.PureComponent<Props> {
   lineRenderer: LineRenderer | null = null;
   selectRenderer: LineRenderer | null = null;
   selectedLinesRenderer: LineRenderer | null = null;
+  canvas: Canvas | null = null;
   targetRef = React.createRef<HTMLDivElement>();
 
   gestureRecognizer: GestureRecognizer | null = null;
@@ -83,9 +85,14 @@ class Painter extends React.PureComponent<Props> {
     }
 
     const glApp = new GLApp(this.targetRef.current);
-    this.selectedLinesRenderer = glApp.addProgram(new LineRenderer(glApp));
-    this.lineRenderer = glApp.addProgram(new LineRenderer(glApp));
-    this.selectRenderer = glApp.addProgram(new LineRenderer(glApp));
+    this.canvas = new Canvas(glApp);
+    this.selectedLinesRenderer = glApp.addProgram(
+      new LineRenderer(glApp, this.canvas)
+    );
+    this.lineRenderer = glApp.addProgram(new LineRenderer(glApp, this.canvas));
+    this.selectRenderer = glApp.addProgram(
+      new LineRenderer(glApp, this.canvas)
+    );
 
     this.gestureRecognizer = new GestureRecognizer(this.targetRef.current);
     this.gestureRecognizer.onZoom.add(this.handleOnZoom);
@@ -135,30 +142,30 @@ class Painter extends React.PureComponent<Props> {
   };
 
   private handleOnPan = (e: PanEvent) => {
-    if (this.lineRenderer) {
+    if (this.canvas) {
       if (this.isSelecting) {
         const a = this.selectStart;
         const b = e.position;
-        const box: Box = {
+        const box: Box = this.windowToLocalBox({
           left: Math.min(a.x, b.x),
           top: Math.min(a.y, b.y),
           bottom: Math.max(a.y, b.y),
           right: Math.max(a.x, b.x)
-        };
+        });
         const gen = new LineGenerator(FeltPen, false);
         this.genBox(gen, box);
         this.selectRenderer?.loadData(gen.generateData());
 
         const insides = this.props.lines.getLinesInside(
-          this.windowToLocalBox(box)
+          box
         );
         this.selectedLines = insides;
         this.markSelectedLines();
       } else if (this._canDrag && e.pointerType !== "scroll") {
         for (const lineId of this.selectedLines.keys()) {
           this.props.lines.moveLine(lineId, {
-            x: e.delta.x / this.lineRenderer.zoom,
-            y: e.delta.y / this.lineRenderer.zoom
+            x: e.delta.x / this.canvas.zoom,
+            y: e.delta.y / this.canvas.zoom
           });
         }
 
@@ -178,13 +185,10 @@ class Painter extends React.PureComponent<Props> {
           this.addPoint(point);
         }
       } else if (e.pointerType === "touch" || e.pointerType === "scroll") {
-        this.lineRenderer.position = {
-          x: this.lineRenderer.position.x + e.delta.x,
-          y: this.lineRenderer.position.y + e.delta.y
+        this.canvas.position = {
+          x: this.canvas.position.x + e.delta.x,
+          y: this.canvas.position.y + e.delta.y
         };
-        if (this.selectedLinesRenderer) {
-          this.selectedLinesRenderer.position = this.lineRenderer.position;
-        }
       }
     }
   };
@@ -229,19 +233,15 @@ class Painter extends React.PureComponent<Props> {
   };
 
   private handleOnZoom = (e: ZoomEvent) => {
-    if (this.lineRenderer) {
+    if (this.canvas) {
       if (!(this.props.cursorMode && e.method === "pinch")) {
-        this.lineRenderer.setZoom(
-          this.lineRenderer.zoom + e.delta * 0.008 * this.lineRenderer.zoom,
+        this.canvas.setZoom(
+          this.canvas.zoom + e.delta * 0.008 * this.canvas.zoom,
           {
-            x: e.around.x / this.lineRenderer.zoom,
-            y: e.around.y / this.lineRenderer.zoom
+            x: e.around.x / this.canvas.zoom,
+            y: e.around.y / this.canvas.zoom
           }
         );
-        if (this.selectedLinesRenderer) {
-          this.selectedLinesRenderer.position = this.lineRenderer.position;
-          this.selectedLinesRenderer.zoom = this.lineRenderer.zoom;
-        }
       }
     }
   };
@@ -284,27 +284,25 @@ class Painter extends React.PureComponent<Props> {
   }
 
   private windowToLocalPoint<T extends { x: number; y: number }>(point: T): T {
-    if (this.lineRenderer === null) {
+    if (this.canvas === null) {
       return point;
     }
     return {
       ...point,
-      x: (point.x - this.lineRenderer.position.x) / this.lineRenderer.zoom,
-      y: (point.y - this.lineRenderer.position.y) / this.lineRenderer.zoom
+      x: (point.x - this.canvas.position.x) / this.canvas.zoom,
+      y: (point.y - this.canvas.position.y) / this.canvas.zoom
     };
   }
   private windowToLocalBox<T extends Box>(box: T): T {
-    if (this.lineRenderer === null) {
+    if (this.canvas === null) {
       return box;
     }
     return {
       ...box,
-      left: (box.left - this.lineRenderer.position.x) / this.lineRenderer.zoom,
-      right:
-        (box.right - this.lineRenderer.position.x) / this.lineRenderer.zoom,
-      top: (box.top - this.lineRenderer.position.y) / this.lineRenderer.zoom,
-      bottom:
-        (box.bottom - this.lineRenderer.position.y) / this.lineRenderer.zoom
+      left: (box.left - this.canvas.position.x) / this.canvas.zoom,
+      right: (box.right - this.canvas.position.x) / this.canvas.zoom,
+      top: (box.top - this.canvas.position.y) / this.canvas.zoom,
+      bottom: (box.bottom - this.canvas.position.y) / this.canvas.zoom
     };
   }
 
@@ -396,11 +394,11 @@ class Painter extends React.PureComponent<Props> {
   };
 
   private addPoint(point: Point) {
-    if (this.lineRenderer) {
-      point.x -= this.lineRenderer.position.x;
-      point.y -= this.lineRenderer.position.y;
-      point.x /= this.lineRenderer.zoom;
-      point.y /= this.lineRenderer.zoom;
+    if (this.canvas) {
+      point.x -= this.canvas.position.x;
+      point.y -= this.canvas.position.y;
+      point.x /= this.canvas.zoom;
+      point.y /= this.canvas.zoom;
     }
 
     if (this.previousPoint) {
