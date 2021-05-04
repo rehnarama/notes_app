@@ -2,8 +2,7 @@ import * as twgl from "twgl.js";
 import { AttributeData } from "../Pen/Pen";
 import GLApp from "../GLApp";
 import GLProgram from "../GLProgram";
-
-const MAX_RESOLUTION = 1920;
+import { mat3 } from "gl-matrix";
 
 export type Color = [number, number, number, number];
 
@@ -15,14 +14,10 @@ in vec4 a_color;
 
 out vec4 v_color;
 
-uniform vec2 u_resolution; 
-uniform float u_scale;
-uniform float u_zoom;
-uniform vec2 u_position;
+uniform mat3 u_vp;
 
 void main() {
-  vec4 coord_position = -1.0 + 2.0 * vec4(u_scale * (u_zoom * a_position.xy + u_position) / u_resolution.xy, 0, 1.0);
-  gl_Position = vec4(1.0, -1.0, 1.0, 1.0) * coord_position;
+  gl_Position = vec4(u_vp * vec3(a_position.xy, 1), a_position.w);
   v_color = a_color;
 }
   `;
@@ -54,13 +49,31 @@ export default class LineRenderer extends GLProgram {
     return this._zoom;
   }
 
+  public get projection(): mat3 {
+    const projection = mat3.projection(
+      mat3.create(),
+      this.glApp.width,
+      this.glApp.height
+    );
+
+    return projection;
+  }
+  public get view(): mat3 {
+    const scale = mat3.fromScaling(mat3.create(), [this.zoom, this.zoom]);
+    const translation = mat3.fromTranslation(mat3.create(), [
+      this.position.x,
+      this.position.y
+    ]);
+    return mat3.mul(mat3.create(), translation, scale);
+  }
+
   private vao: WebGLVertexArrayObject | null = null;
   private vbo: WebGLBuffer | null = null;
   private data: AttributeData | null = null;
   private isDirty = false;
 
   private programInfo: twgl.ProgramInfo | null = null;
-  private uniformLocations = {
+  private attributeLocations = {
     position: 0,
     color: 0
   };
@@ -84,30 +97,17 @@ export default class LineRenderer extends GLProgram {
   //   this.glApp.onDraw.add(this.draw);
   // }
 
-  private updateSize = (app: GLApp) => {
-    if (this.programInfo) {
-      this.useProgram(this.programInfo);
-
-      twgl.setUniforms(this.programInfo, {
-        u_resolution: [
-          app.width * app.actualScale,
-          app.height * app.actualScale
-        ],
-        u_scale: this.glApp.actualScale
-      });
-    }
-  };
 
   public initProgram = (app: GLApp) => {
     this.programInfo = this.createProgramInfo(vsSource, fsSource);
 
     this.useProgram(this.programInfo);
 
-    this.uniformLocations.position = this.glApp.gl.getAttribLocation(
+    this.attributeLocations.position = this.glApp.gl.getAttribLocation(
       this.programInfo.program,
       "a_position"
     );
-    this.uniformLocations.color = this.glApp.gl.getAttribLocation(
+    this.attributeLocations.color = this.glApp.gl.getAttribLocation(
       this.programInfo.program,
       "a_color"
     );
@@ -126,11 +126,11 @@ export default class LineRenderer extends GLProgram {
       this.vbo = this.glApp.gl.createBuffer();
       app.gl.bindBuffer(this.glApp.gl.ARRAY_BUFFER, this.vbo);
 
-      app.gl.enableVertexAttribArray(this.uniformLocations.position);
-      app.gl.enableVertexAttribArray(this.uniformLocations.color);
+      app.gl.enableVertexAttribArray(this.attributeLocations.position);
+      app.gl.enableVertexAttribArray(this.attributeLocations.color);
 
       app.gl.vertexAttribPointer(
-        this.uniformLocations.position,
+        this.attributeLocations.position,
         2,
         this.glApp.gl.FLOAT,
         false,
@@ -138,7 +138,7 @@ export default class LineRenderer extends GLProgram {
         0
       );
       app.gl.vertexAttribPointer(
-        this.uniformLocations.color,
+        this.attributeLocations.color,
         4,
         this.glApp.gl.FLOAT,
         false,
@@ -178,7 +178,6 @@ export default class LineRenderer extends GLProgram {
 
     this.useProgram(this.program);
     app.gl.bindVertexArray(this.vao);
-    this.updateSize(app);
 
     if (this.isDirty) {
       app.gl.bindBuffer(this.glApp.gl.ARRAY_BUFFER, this.vbo);
@@ -192,8 +191,7 @@ export default class LineRenderer extends GLProgram {
     const trianglesToDraw = this.data.vertices.length / 6;
 
     twgl.setUniforms(this.programInfo, {
-      u_position: [this.position.x, this.position.y],
-      u_zoom: this.zoom
+      u_vp: mat3.mul(mat3.create(), this.projection, this.view)
     });
 
     app.gl.drawArrays(app.gl.TRIANGLES, 0, trianglesToDraw);

@@ -156,12 +156,9 @@ export default class GLApp {
     this.isDirty = false;
     this.clear();
 
-    const before = performance.now();
     for (const program of this.programs) {
       program.draw(this);
     }
-    const after = performance.now();
-    console.log(after - before);
   };
 
   public dispose() {
