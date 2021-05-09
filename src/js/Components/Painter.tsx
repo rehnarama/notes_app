@@ -17,6 +17,8 @@ import CommandManager from "../CommandManager";
 import PointersData from "../Data/Pointers/PointersData";
 import Pointers from "./Pointers";
 import Canvas from "../Rendering/Canvas";
+import PointersRenderer from "../Rendering/PointersRenderer";
+import Vector2 from "../Utils/Vector2";
 
 const MIN_REMOVE_DISTANCE = 6;
 const MIN_DISTANCE = 2;
@@ -48,6 +50,7 @@ class Painter extends React.PureComponent<Props> {
   hasNew = false;
 
   lineGenerator = new LineGenerator(FeltPen);
+  pointersRenderer: PointersRenderer | null = null;
   lineRenderer: LineRenderer | null = null;
   selectRenderer: LineRenderer | null = null;
   selectedLinesRenderer: LineRenderer | null = null;
@@ -93,6 +96,10 @@ class Painter extends React.PureComponent<Props> {
     this.selectRenderer = glApp.addProgram(
       new LineRenderer(glApp, this.canvas)
     );
+    this.pointersRenderer = glApp.addProgram(
+      new PointersRenderer(glApp, this.canvas)
+    );
+    this.setupPointers(this.pointersRenderer);
 
     this.gestureRecognizer = new GestureRecognizer(this.targetRef.current);
     this.gestureRecognizer.onZoom.add(this.handleOnZoom);
@@ -100,7 +107,6 @@ class Painter extends React.PureComponent<Props> {
     this.gestureRecognizer.onUp.add(this.handleOnUp);
     this.gestureRecognizer.onHover.add(this.handleOnHover);
     this.gestureRecognizer.onMove.add(this.handleOnMove);
-
     this.gestureRecognizer.onPan.add(this.handleOnPan);
 
     this.targetRef.current.addEventListener(
@@ -111,8 +117,18 @@ class Painter extends React.PureComponent<Props> {
     CommandManager.Instance.on("delete", this.handleOnDelete);
   }
 
+  private setupPointers = (pointersRenderer: PointersRenderer) => {
+    this.props.pointers.onPointerMapUpdated.add(() => {
+      pointersRenderer.loadData(
+        Array.from(this.props.pointers.pointerMap.values()).map(
+          p => new Vector2(p.x, p.y)
+        )
+      );
+    });
+  };
+
   handleOnMove = (e: MoveEvent) => {
-    this.props.pointers.updatePoint(e.position);
+    this.props.pointers.updatePoint(this.windowToLocalPoint(e.position));
   };
 
   componentDidUpdate() {
@@ -142,6 +158,8 @@ class Painter extends React.PureComponent<Props> {
   };
 
   private handleOnPan = (e: PanEvent) => {
+    this.props.pointers.updatePoint(this.windowToLocalPoint(e.position));
+
     if (this.canvas) {
       if (this.isSelecting) {
         const a = this.selectStart;
@@ -156,9 +174,7 @@ class Painter extends React.PureComponent<Props> {
         this.genBox(gen, box);
         this.selectRenderer?.loadData(gen.generateData());
 
-        const insides = this.props.lines.getLinesInside(
-          box
-        );
+        const insides = this.props.lines.getLinesInside(box);
         this.selectedLines = insides;
         this.markSelectedLines();
       } else if (this._canDrag && e.pointerType !== "scroll") {
@@ -432,7 +448,6 @@ class Painter extends React.PureComponent<Props> {
             height: "100%"
           }}
         />
-        <Pointers pointersData={this.props.pointers} />
       </div>
     );
   }

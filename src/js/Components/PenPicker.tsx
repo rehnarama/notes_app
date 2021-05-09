@@ -1,8 +1,8 @@
 import * as React from "react";
 import Pen from "../Pen/Pen";
 
-import fluorescentPenSrc from "../images/fluorescent_pen.svg";
-import feltPenSrc from "../images/felt_pen.svg";
+import fluorescentPenSrc from "url:../images/fluorescent_pen.svg";
+import feltPenSrc from "url:../images/felt_pen.svg";
 import classes from "./PenPicker.scss";
 import "./PenPicker.scss";
 import FeltPen from "../Pen/FeltPen";

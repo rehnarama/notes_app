@@ -7,8 +7,8 @@ import FeltPen from "../Pen/FeltPen";
 
 import ImageCheckbox from "./ImageCheckbox";
 
-import CursorModeImg from "../../images/cursormode.svg";
-import EraserModeImg from "../../images/eraser.svg";
+import CursorModeImg from "url:../../images/cursormode.svg";
+import EraserModeImg from "url:../../images/eraser.svg";
 import useHash from "../Hooks/useHash";
 import GLApp from "../GLApp";
 import UserListContainer from "./UserList/UserListContainer";
