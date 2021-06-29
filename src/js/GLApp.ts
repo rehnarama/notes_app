@@ -1,11 +1,13 @@
 import { Hook } from "./utils";
+import GLProgram from "./GLProgram";
+import * as twgl from "twgl.js";
 
 const MAX_RESOLUTION = 1920;
 
 export default class GLApp {
   private targetElement: HTMLElement;
   private _canvas: HTMLCanvasElement;
-  private _gl: WebGLRenderingContext;
+  private _gl: WebGL2RenderingContext;
   public get gl() {
     return this._gl;
   }
@@ -44,15 +46,17 @@ export default class GLApp {
     return this.dimensions.height;
   }
 
-  public onDimensionChange = new Hook<
-    (width: number, height: number) => void
+  public onSizeChange = new Hook<
+    (width: number, height: number, scale: number) => void
   >();
-  public onScaleChange = new Hook<(scale: number) => void>();
-  public onDraw = new Hook<() => void>();
+  // public onScaleChange = new Hook<(scale: number) => void>();
+  // public onDraw = new Hook<() => void>();
 
   public getContext() {
     return this._gl;
   }
+
+  private programs: GLProgram[] = [];
 
   constructor(targetElement: HTMLElement) {
     this.targetElement = targetElement;
@@ -60,27 +64,34 @@ export default class GLApp {
     this._canvas = document.createElement("canvas");
     this.targetElement.appendChild(this._canvas);
 
-    this._gl = this._canvas.getContext("webgl") as WebGLRenderingContext;
+    this._gl = this._canvas.getContext("webgl2") as WebGL2RenderingContext;
     this.updateSize(); // Have to establish size at least once before rendering can occur!
 
     window.addEventListener("resize", this.updateSize);
   }
 
+  public addProgram<T extends GLProgram>(program: T) {
+    this.programs.push(program);
+    return program;
+  }
+
   private guessScale() {
     if (this.requestedScale === "auto") {
       const dpr = window.devicePixelRatio;
-      const resolution =
-        Math.max(
-          this.targetElement.offsetWidth,
-          this.targetElement.offsetHeight
-        ) * dpr;
+      return dpr;
 
-      if (resolution / MAX_RESOLUTION > 1) {
-        // Performance is too bad if we use such a high resolution, scale down to a reasonable level
-        return dpr / (resolution / MAX_RESOLUTION);
-      } else {
-        return dpr;
-      }
+      // const resolution =
+      //   Math.max(
+      //     this.targetElement.offsetWidth,
+      //     this.targetElement.offsetHeight
+      //   ) * dpr;
+
+      // if (resolution / MAX_RESOLUTION > 1) {
+      //   // Performance is too bad if we use such a high resolution, scale down to a reasonable level
+      //   return dpr / (resolution / MAX_RESOLUTION);
+      // } else {
+      //   return dpr;
+      // }
     } else {
       return this.requestedScale;
     }
@@ -114,11 +125,15 @@ export default class GLApp {
 
     this._dimensions = { width: elemWidth, height: elemHeight };
 
-    if (oldScale !== this.actualScale) {
-      this.onScaleChange.call(this.actualScale);
-    }
-    if (oldDimensions.width !== width || oldDimensions.height !== height) {
-      this.onDimensionChange.call(width, height);
+    // if () {
+    //   this.onScaleChange.call(this.actualScale);
+    // }
+    if (
+      oldDimensions.width !== width ||
+      oldDimensions.height !== height ||
+      oldScale !== this.actualScale
+    ) {
+      this.onSizeChange.call(width, height, this.actualScale);
     }
 
     this.requestFrame();
@@ -140,7 +155,10 @@ export default class GLApp {
   public onFrame = () => {
     this.isDirty = false;
     this.clear();
-    this.onDraw.call();
+
+    for (const program of this.programs) {
+      program.draw(this);
+    }
   };
 
   public dispose() {

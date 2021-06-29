@@ -12,6 +12,7 @@ import UserList from "../Data/Users/UserList";
 import { Provider as DataProvider } from "../Data/DataContext";
 import useSingleton from "../Hooks/useSingleton";
 import Drawer from "./Drawer";
+import PointersData from "../Data/Pointers/PointersData";
 
 const SIGNALLING_URL = "wss://notes-signalling.herokuapp.com";
 
@@ -21,6 +22,7 @@ const App: React.FC = () => {
   const fmn = useSingleton(() => new FullMeshNetwork(SIGNALLING_URL));
   const lines = useSingleton(() => new Lines(fmn));
   const userList = useSingleton(() => new UserList(fmn));
+  const pointers = useSingleton(() => new PointersData(fmn));
   const shortcutRecognizer = useSingleton(() => new ShortcutRecognizer());
 
   React.useEffect(() => {
@@ -72,7 +74,7 @@ const App: React.FC = () => {
 
       if (fmn.currentRoomId !== undefined) {
         fmn.close();
-        for (const [id, _] of lines.getLines()) {
+        for (const [id] of lines.getLines()) {
           lines.removeLine(id);
         }
       }
@@ -87,8 +89,16 @@ const App: React.FC = () => {
   const [thickness, setThickness] = React.useState(1);
 
   return (
-    <DataProvider value={{ userList, lines }}>
+    <DataProvider value={{ userList, lines, pointers }}>
       <main className={classes.main}>
+        <Painter
+          color={color}
+          thickness={thickness}
+          lines={lines}
+          eraseMode={eraseMode}
+          cursorMode={cursorMode}
+          pointers={pointers}
+        />
         <header>
           <Drawer>
             <Toolbar
@@ -103,13 +113,6 @@ const App: React.FC = () => {
             />
           </Drawer>
         </header>
-        <Painter
-          color={color}
-          thickness={thickness}
-          lines={lines}
-          eraseMode={eraseMode}
-          cursorMode={cursorMode}
-        />
       </main>
     </DataProvider>
   );

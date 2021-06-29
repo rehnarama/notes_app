@@ -42,6 +42,10 @@ export type UpEvent = DownEvent;
 export interface HoverEvent {
   position: { x: number; y: number };
 }
+export interface MoveEvent {
+  position: { x: number; y: number };
+  pagePosition: { x: number; y: number };
+}
 
 export default class GestureRecognizer {
   private element: HTMLElement;
@@ -56,6 +60,7 @@ export default class GestureRecognizer {
   public onDown = new Hook<(e: DownEvent) => void>();
   public onUp = new Hook<(e: UpEvent) => void>();
   public onHover = new Hook<(e: HoverEvent) => void>();
+  public onMove = new Hook<(e: MoveEvent) => void>();
 
   private capture: boolean;
 
@@ -180,6 +185,14 @@ export default class GestureRecognizer {
     for (const [pointerId, point] of this.pressedPointerMap) {
       this.prevPressedPointerMap.set(pointerId, point);
     }
+
+    this.onMove.call({
+      position: {
+        x: e.offsetX,
+        y: e.offsetY
+      },
+      pagePosition: { x: e.pageX, y: e.pageY }
+    });
   };
 
   private isPinch() {
