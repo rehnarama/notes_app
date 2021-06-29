@@ -5,6 +5,7 @@ import GLProgram from "../GLProgram";
 import Canvas from "../Rendering/Canvas";
 import Vector2 from "../Utils/Vector2";
 import cursorImgSrc from "url:../../images/cursor@3x.png";
+import { mat3, vec2 } from "gl-matrix";
 
 export type Color = [number, number, number, number];
 
@@ -62,14 +63,14 @@ export default class PointersRenderer extends GLProgram {
 
   private textures!: Record<string, WebGLTexture>;
 
-  private cursorImg = new Image()
-  private width = 20
+  private cursorImg = new Image();
+  private width = 20;
 
   constructor(glApp: GLApp, canvas: Canvas) {
     super(glApp);
     this.canvas = canvas;
     this.program = this.initProgram(glApp);
-    this.cursorImg.src = cursorImgSrc
+    this.cursorImg.src = cursorImgSrc;
   }
 
   public initProgram = (app: GLApp) => {
@@ -208,8 +209,8 @@ export default class PointersRenderer extends GLProgram {
       0,
       0,
       1
-    ]
-  }
+    ];
+  };
 
   public loadData = (cursors: Vector2[]) => {
     this.data = cursors.map(this.makeQuad).flat();
