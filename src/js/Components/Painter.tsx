@@ -15,7 +15,6 @@ import { intersects } from "../Lines/LineUtils";
 import GLApp from "../GLApp";
 import CommandManager from "../CommandManager";
 import PointersData from "../Data/Pointers/PointersData";
-import Pointers from "./Pointers";
 import Canvas from "../Rendering/Canvas";
 import PointersRenderer from "../Rendering/PointersRenderer";
 import Vector2 from "../Utils/Vector2";

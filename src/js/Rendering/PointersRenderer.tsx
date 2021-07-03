@@ -4,7 +4,7 @@ import GLApp from "../GLApp";
 import GLProgram from "../GLProgram";
 import Canvas from "../Rendering/Canvas";
 import Vector2 from "../Utils/Vector2";
-import cursorImgSrc from "url:../../images/cursor@3x.png";
+import cursorImgSrc from "../../images/cursor@3x.png";
 import { mat3, vec2 } from "gl-matrix";
 
 export type Color = [number, number, number, number];

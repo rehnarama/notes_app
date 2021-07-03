@@ -1,8 +1,6 @@
 import { Hook } from "./utils";
 import GLProgram from "./GLProgram";
-import * as twgl from "twgl.js";
 
-const MAX_RESOLUTION = 1920;
 
 export default class GLApp {
   private targetElement: HTMLElement;

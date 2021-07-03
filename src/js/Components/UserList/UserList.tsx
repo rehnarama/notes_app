@@ -1,8 +1,8 @@
 import * as React from "react";
-import User from "src/js/Data/Users/User";
 import classes from "./UserList.module.css";
 import { ConnectionState } from "network/";
 import classNames from "classnames";
+import User from "../../Data/Users/User";
 
 const isLoading = (state: ConnectionState): boolean => {
   return state !== "connected";

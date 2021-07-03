@@ -1,4 +1,4 @@
-export default class Hook<T extends (...args: any) => any> {
+export default class Hook<T extends (...args: any[]) => any> {
   private queue: T[] = [];
 
   private lastCall: number = Number.MIN_SAFE_INTEGER;

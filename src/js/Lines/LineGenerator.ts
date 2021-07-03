@@ -20,7 +20,8 @@ interface Line {
   color: Color;
   thickness: number;
 }
-export { Point, Line };
+export { Point };
+export type { Line };
 
 export default class LineGenerator {
   private pen: Pen;
