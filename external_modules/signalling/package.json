@@ -12,7 +12,7 @@
     "build:watch": "tsc --watch"
   },
   "devDependencies": {
-    "@types/jest": "^24.9.1",
+    "@types/jest": "^26.0.3",
     "@types/node": "^13.13.4",
     "@types/ws": "^7.2.0",
     "jest": "^25.1.0",

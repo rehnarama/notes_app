@@ -1,6 +1,6 @@
 import * as React from "react";
 import PointersData from "../Data/Pointers/PointersData";
-import pointerImage from "url:../../images/cursormode.svg";
+import pointerImage from "../../images/cursormode.svg?url";
 import GLApp from "../GLApp";
 import PointersRenderer from "../Rendering/PointersRenderer";
 import Canvas from "../Rendering/Canvas";
