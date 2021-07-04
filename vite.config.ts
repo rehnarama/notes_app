@@ -6,6 +6,8 @@ export default defineConfig({
   plugins: [reactRefresh()],
   root: "src",
   build: {
-    outDir: "../lol"
-  }
+    outDir: "../dist",
+    emptyOutDir: true
+  },
+  base: ""
 });
