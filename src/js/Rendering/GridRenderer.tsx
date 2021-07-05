@@ -2,8 +2,6 @@ import * as twgl from "twgl.js";
 import GLApp from "../GLApp";
 import GLProgram from "../GLProgram";
 import Canvas from "../Rendering/Canvas";
-import Vector2 from "../Utils/Vector2";
-import cursorImgSrc from "../../images/cursor@3x.png";
 
 export type Color = [number, number, number, number];
 
@@ -16,30 +14,41 @@ in vec2 a_uv;
 
 out vec4 v_color;
 out vec2 v_uv;
+out vec4 v_position;
 
 uniform mat3 u_vp;
 
 void main() {
-  gl_Position = vec4(u_vp * vec3(a_position.xy, 1), a_position.w);
+  gl_Position = a_position;
   v_color = a_color;
   v_uv = a_uv;
+  v_position = vec4(inverse(u_vp) * vec3(a_position.xy, 1), a_position.w);
 }
   `;
 const fsSource = `#version 300 es
 precision mediump float;
 
+in vec4 v_position;
 in vec4 v_color;
 in vec2 v_uv;
 
 out vec4 output_color;
 
-uniform sampler2D u_texture;
-
 void main(void) {
-  output_color = texture(u_texture, v_uv);
+  float LINE_EVERY_PX = 20.0;
+  float LINE_THICKNESS = 1.0;
+
+  float x = mod(v_position.x, LINE_EVERY_PX);
+  float y = mod(v_position.y, LINE_EVERY_PX);
+
+  float edge = LINE_EVERY_PX - LINE_THICKNESS;
+
+  float alpha = step(0.5, step(edge, x) + step(edge, y));
+  
+  output_color = vec4(v_color.rgb, alpha * v_color.a);
 }`;
 
-export default class PointersRenderer extends GLProgram {
+export default class GridRenderer extends GLProgram {
   private canvas: Canvas;
 
   private vao: WebGLVertexArrayObject | null = null;
@@ -59,16 +68,10 @@ export default class PointersRenderer extends GLProgram {
 
   private program: twgl.ProgramInfo;
 
-  private textures!: Record<string, WebGLTexture>;
-
-  private cursorImg = new Image();
-  private width = 20;
-
   constructor(glApp: GLApp, canvas: Canvas) {
     super(glApp);
     this.canvas = canvas;
     this.program = this.initProgram(glApp);
-    this.cursorImg.src = cursorImgSrc;
   }
 
   public initProgram = (app: GLApp) => {
@@ -94,15 +97,6 @@ export default class PointersRenderer extends GLProgram {
     ) as number;
 
     this.setupBuffers(app);
-
-    this.textures = twgl.createTextures(app.gl, {
-      cursor: {
-        src: cursorImgSrc
-      }
-    });
-    this.glApp.gl.activeTexture(this.glApp.gl.TEXTURE0);
-    this.glApp.gl.bindTexture(this.glApp.gl.TEXTURE_2D, this.textures.cursor);
-    this.glApp.gl.uniform1i(this.uniformLocations.texture, 0);
 
     this.glApp.gl.blendFunc(
       this.glApp.gl.SRC_ALPHA,
@@ -153,65 +147,44 @@ export default class PointersRenderer extends GLProgram {
     }
   }
 
-  private makeQuad = (position: Vector2) => {
-    const aspectRatio = this.cursorImg.height / this.cursorImg.width;
-    const width = this.width;
-    const height = aspectRatio * width;
-
+  private makeQuad = () => {
+    const COLOR = [0.7, 0.7, 0.7, 0.8];
     return [
-      position.x,
-      position.y,
-      0,
-      0,
+      -1, // Vert 1
       1,
       0,
       0,
+      ...COLOR,
+      -1, // Vert 2
+      -1,
       1,
-      position.x + width,
-      position.y,
+      0,
+      ...COLOR,
+      1, // Vert 3
       1,
       0,
       1,
-      0,
-      0,
-      1,
-      position.x,
-      position.y + height,
-      0,
-      1,
-      1,
-      0,
-      0,
-      1,
-      position.x,
-      position.y + height,
-      0,
-      1,
-      1,
-      0,
-      0,
-      1,
-      position.x + width,
-      position.y,
+      ...COLOR,
+      1, // Vert 4
       1,
       0,
       1,
-      0,
-      0,
-      1,
-      position.x + width,
-      position.y + height,
-      1,
-      1,
+      ...COLOR,
+      -1, // Vert 5
+      -1,
       1,
       0,
-      0,
-      1
+      ...COLOR,
+      1, // Vert 6
+      -1,
+      1,
+      1,
+      ...COLOR,
     ];
   };
 
-  public loadData = (cursors: Vector2[]) => {
-    this.data = cursors.map(this.makeQuad).flat();
+  public loadData = () => {
+    this.data = this.makeQuad();
     this.isDirty = true;
     this.glApp.requestFrame();
   };

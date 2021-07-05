@@ -4,6 +4,14 @@ import { mat3 } from "gl-matrix";
 export default class Canvas {
   private glApp: GLApp;
 
+  public get width() {
+    return this.glApp.width;
+  }
+
+  public get height() {
+    return this.glApp.height;
+  }
+
   public _position = { x: 0, y: 0 };
   public set position(value: { x: number; y: number }) {
     this._position = value;
@@ -63,5 +71,4 @@ export default class Canvas {
 
     this.zoom += zoomDelta;
   };
-
 }

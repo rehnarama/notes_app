@@ -18,6 +18,7 @@ import PointersData from "../Data/Pointers/PointersData";
 import Canvas from "../Rendering/Canvas";
 import PointersRenderer from "../Rendering/PointersRenderer";
 import Vector2 from "../Utils/Vector2";
+import GridRenderer from "../Rendering/GridRenderer";
 
 const MIN_REMOVE_DISTANCE = 6;
 const MIN_DISTANCE = 2;
@@ -53,6 +54,7 @@ class Painter extends React.PureComponent<Props> {
   lineRenderer: LineRenderer | null = null;
   selectRenderer: LineRenderer | null = null;
   selectedLinesRenderer: LineRenderer | null = null;
+  gridRenderer: GridRenderer | null = null;
   canvas: Canvas | null = null;
   targetRef = React.createRef<HTMLDivElement>();
 
@@ -88,6 +90,7 @@ class Painter extends React.PureComponent<Props> {
 
     const glApp = new GLApp(this.targetRef.current);
     this.canvas = new Canvas(glApp);
+    this.gridRenderer = glApp.addProgram(new GridRenderer(glApp, this.canvas));
     this.selectedLinesRenderer = glApp.addProgram(
       new LineRenderer(glApp, this.canvas)
     );
@@ -99,6 +102,7 @@ class Painter extends React.PureComponent<Props> {
       new PointersRenderer(glApp, this.canvas)
     );
     this.setupPointers(this.pointersRenderer);
+    this.setupGrid(this.gridRenderer);
 
     this.gestureRecognizer = new GestureRecognizer(this.targetRef.current);
     this.gestureRecognizer.onZoom.add(this.handleOnZoom);
@@ -124,6 +128,10 @@ class Painter extends React.PureComponent<Props> {
         )
       );
     });
+  };
+
+  private setupGrid = (gridRenderer: GridRenderer) => {
+    gridRenderer.loadData();
   };
 
   handleOnMove = (e: MoveEvent) => {
