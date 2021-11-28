@@ -58,3 +58,9 @@ export function generateCircleVertices(
 
   return vertices;
 }
+
+export function averageAngles(angles: number[]) {
+  let sinSum = angles.reduce((sum, angle) => Math.sin(angle) + sum, 0);
+  let cosSum = angles.reduce((sum, angle) => Math.cos(angle) + sum, 0);
+  return Math.atan2(sinSum / angles.length, cosSum / angles.length);
+}

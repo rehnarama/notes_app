@@ -1,18 +1,20 @@
 import Pen, { AttributeData } from "./Pen";
-import { Line } from "../Lines/LineGenerator";
+import { Line, Point } from "../Lines/LineGenerator";
 import {
   getPointRadius,
   generateCircleVertices,
   buildQuad,
   buildTriangle
 } from "./PenUtils";
-import { Color } from "../Lines/LineRenderer";
 
 const MAX_ANGLE = 0.5;
+
+const DEBUG = false;
 
 const FeltPen: Pen = {
   generateAttributeData(lineData: Line): AttributeData {
     const line = lineData.points;
+
     if (line.length === 0) {
       return { vertices: [] };
     }
@@ -77,7 +79,7 @@ const FeltPen: Pen = {
         x: point.x - perpX * pointRadius,
         y: point.y - perpY * pointRadius
       };
-      // While we techincally could get away with only one quad, it will cause precision problems 
+      // While we techincally could get away with only one quad, it will cause precision problems
       // when adding the line cap
       buildQuad(meshPoints, oldPoint, a, point, c, lineData.color);
       buildQuad(meshPoints, oldPoint, b, point, d, lineData.color);
@@ -94,7 +96,13 @@ const FeltPen: Pen = {
         const y = point.y + sign * Math.sin(perpTheta) * pointRadius;
         const capPoint = { x, y };
         if (oldCapPoint !== null) {
-            buildTriangle(meshPoints, point, oldCapPoint, capPoint, lineData.color)
+          buildTriangle(
+            meshPoints,
+            point,
+            oldCapPoint,
+            capPoint,
+            lineData.color
+          );
         }
         oldCapPoint = capPoint;
 
@@ -115,6 +123,19 @@ const FeltPen: Pen = {
         lineData.thickness
       )
     );
+
+    if (DEBUG) {
+      // Draws red dots representing each point
+      for (let point of line) {
+        meshPoints.push(
+          ...generateCircleVertices(
+            point,
+            [1, 0, 0, 1],
+            lineData.thickness * 0.5
+          )
+        );
+      }
+    }
 
     return { vertices: meshPoints };
   }
