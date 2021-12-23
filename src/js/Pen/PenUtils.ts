@@ -3,6 +3,7 @@ import { Color } from "../Lines/LineRenderer";
 
 const CIRCLE_VERTICE_PER_PIXEL = 2;
 const DEFAULT_LINE_WIDTH = 1;
+const MAX_ANGLE = 0.5;
 
 export function getPointRadius(point: Point) {
   const pressure = point.pressure;
@@ -42,7 +43,7 @@ export function generateCircleVertices(
   const radius = getPointRadius(point) * thickness;
   const circumference = radius * Math.PI;
   const nVertices = CIRCLE_VERTICE_PER_PIXEL * circumference;
-  const dTheta = (2 * Math.PI) / nVertices;
+  const dTheta = Math.min((2 * Math.PI) / nVertices, MAX_ANGLE);
 
   for (let theta = 0; theta <= 2 * Math.PI; theta += dTheta) {
     const x1 = radius * Math.cos(theta) + point.x;
@@ -56,4 +57,10 @@ export function generateCircleVertices(
   }
 
   return vertices;
+}
+
+export function averageAngles(angles: number[]) {
+  let sinSum = angles.reduce((sum, angle) => Math.sin(angle) + sum, 0);
+  let cosSum = angles.reduce((sum, angle) => Math.cos(angle) + sum, 0);
+  return Math.atan2(sinSum / angles.length, cosSum / angles.length);
 }

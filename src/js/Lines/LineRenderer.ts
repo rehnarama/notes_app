@@ -1,8 +1,8 @@
 import * as twgl from "twgl.js";
-import { AttributeData } from "../Pen/Pen";
 import GLApp from "../GLApp";
 import GLProgram from "../GLProgram";
 import Canvas from "../Rendering/Canvas";
+import LineGenerator from "./LineGenerator";
 
 export type Color = [number, number, number, number];
 
@@ -36,7 +36,6 @@ export default class LineRenderer extends GLProgram {
 
   private vao: WebGLVertexArrayObject | null = null;
   private vbo: WebGLBuffer | null = null;
-  private data: AttributeData | null = null;
   private isDirty = false;
 
   private programInfo: twgl.ProgramInfo | null = null;
@@ -46,6 +45,7 @@ export default class LineRenderer extends GLProgram {
   };
 
   private program: twgl.ProgramInfo;
+  lineGenerator: LineGenerator | null = null;
 
   constructor(glApp: GLApp, canvas: Canvas) {
     super(glApp);
@@ -103,14 +103,20 @@ export default class LineRenderer extends GLProgram {
     }
   }
 
-  public loadData = (data: AttributeData) => {
-    this.data = data;
+  public loadData = (generator: LineGenerator) => {
     this.isDirty = true;
+    this.lineGenerator = generator;
     this.glApp.requestFrame();
   };
 
   public draw = (app: GLApp) => {
-    if (this.programInfo === null || this.data === null) {
+    if (this.lineGenerator === null) {
+      return;
+    }
+
+    const data = this.lineGenerator.generateData();
+
+    if (this.programInfo === null || data === null) {
       return;
     }
 
@@ -121,12 +127,12 @@ export default class LineRenderer extends GLProgram {
       app.gl.bindBuffer(this.glApp.gl.ARRAY_BUFFER, this.vbo);
       app.gl.bufferData(
         this.glApp.gl.ARRAY_BUFFER,
-        new Float32Array(this.data.vertices),
+        new Float32Array(data.vertices),
         this.glApp.gl.STREAM_DRAW
       );
       this.isDirty = false;
     }
-    const trianglesToDraw = this.data.vertices.length / 6;
+    const trianglesToDraw = data.vertices.length / 6;
 
     twgl.setUniforms(this.programInfo, {
       u_vp: this.canvas.vp_matrix

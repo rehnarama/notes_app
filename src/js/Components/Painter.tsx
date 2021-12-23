@@ -76,8 +76,7 @@ class Painter extends React.PureComponent<Props> {
       }
       this.hasNew = true;
 
-      const data = this.lineGenerator.generateData();
-      this.lineRenderer?.loadData(data);
+      this.lineRenderer?.loadData(this.lineGenerator);
     });
   }
 
@@ -171,7 +170,7 @@ class Painter extends React.PureComponent<Props> {
         });
         const gen = new LineGenerator(FeltPen, false);
         this.genBox(gen, box);
-        this.selectRenderer?.loadData(gen.generateData());
+        this.selectRenderer?.loadData(gen);
 
         const insides = this.props.lines.getLinesInside(box);
         this.selectedLines = insides;
@@ -219,7 +218,7 @@ class Painter extends React.PureComponent<Props> {
 
   private handleOnUp = (e: UpEvent) => {
     if (this.isSelecting) {
-      this.selectRenderer?.loadData({ vertices: [] });
+      this.selectRenderer?.loadData(new LineGenerator(FeltPen));
       this.isSelecting = false;
     }
   };
@@ -294,8 +293,7 @@ class Painter extends React.PureComponent<Props> {
       };
       selectedGen.addLine(lineId, selectionLine);
     }
-    const data = selectedGen.generateData();
-    this.selectedLinesRenderer?.loadData(data);
+    this.selectedLinesRenderer?.loadData(selectedGen);
   }
 
   private windowToLocalPoint<T extends { x: number; y: number }>(point: T): T {
@@ -420,7 +418,9 @@ class Painter extends React.PureComponent<Props> {
       const dx = this.previousPoint.x - point.x;
       const dy = this.previousPoint.y - point.y;
       // We subsample for better quality and memory efficiency
-      if (dx * dx + dy * dy < MIN_DISTANCE * MIN_DISTANCE) {
+      // Higher zoom requires higher resolution, scale by zoom value
+      const minDistance = MIN_DISTANCE / (this.canvas?.zoom ?? 1);
+      if (dx * dx + dy * dy < minDistance * minDistance) {
         return;
       }
     }

@@ -69,8 +69,7 @@ const Toolbar: React.SFC<Props> = props => {
           thickness: props.thickness
         });
 
-        const data = generator.generateData();
-        previewRenderer.current.loadData(data);
+        previewRenderer.current.loadData(generator);
       }
     }
     updatePreview();

@@ -2,6 +2,7 @@ import interpolateLine from "./LineInterpolation";
 import Pen, { AttributeData } from "../Pen/Pen";
 import { LineId } from "../Data/Lines/Lines";
 import { Color } from "./LineRenderer";
+import { lerp } from "../math";
 
 const DEFAULT_PRESSURE = 0.5;
 
@@ -13,6 +14,14 @@ class Point {
     this.x = x;
     this.y = y;
     this.pressure = pressure || DEFAULT_PRESSURE;
+  }
+
+  static lerp(a: Point, b: Point, t: number) {
+    return new Point(
+      lerp(a.x, b.x, t),
+      lerp(a.y, b.y, t),
+      lerp(a.pressure, b.pressure, t)
+    );
   }
 }
 interface Line {
@@ -26,13 +35,12 @@ export type { Line };
 export default class LineGenerator {
   private pen: Pen;
 
-  // private oldLineLength: Map<LineId, number> = new Map();
   private lineVertices: Map<LineId, AttributeData> = new Map();
+  private lines: Map<LineId, Line> = new Map();
+  private dirtyLines: Map<LineId, boolean> = new Map();
   private vertices: number[] = [];
 
   private interpolate: boolean;
-
-  private isDirty = false;
 
   constructor(pen: Pen, interpolate = false) {
     this.pen = pen;
@@ -46,34 +54,33 @@ export default class LineGenerator {
       thickness: line.thickness
     };
 
-    const attrData = this.pen.generateAttributeData(interpolatedLine);
-
-    this.isDirty = this.lineVertices.has(id);
-    this.lineVertices.set(id, attrData);
-
-    if (!this.isDirty) {
-      // Since if it's dirty, vertices is gonna be re-generated anyway
-      this.vertices.push(...attrData.vertices);
-    }
+    this.lines.set(id, interpolatedLine);
+    this.dirtyLines.set(id, true);
   }
 
   public removeLine(id: LineId) {
+    this.lines.delete(id);
+    this.dirtyLines.delete(id);
     this.lineVertices.delete(id);
-    this.isDirty = true;
   }
 
   public generateData(): AttributeData {
-    if (this.isDirty) {
-      let counter = 0;
-      for (const attributes of this.lineVertices.values()) {
-        for (const attribute of attributes.vertices) {
-          this.vertices[counter] = attribute;
-          counter++;
-        }
+    let counter = 0;
+    for (const [id, line] of this.lines) {
+      if (this.dirtyLines.get(id)) {
+        const data = this.pen.generateAttributeData(line);
+        this.lineVertices.set(id, data);
+        this.dirtyLines.set(id, false);
       }
-      this.vertices.splice(counter, this.vertices.length - counter);
+      const data = this.lineVertices.get(id) as AttributeData;
 
-      this.isDirty = false;
+      for (const attribute of data.vertices) {
+        this.vertices[counter] = attribute;
+        counter++;
+      }
+    }
+    if (this.vertices.length > counter) {
+      this.vertices.splice(counter, this.vertices.length - counter);
     }
 
     return {
