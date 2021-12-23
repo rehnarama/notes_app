@@ -16,5 +16,7 @@
     "typescript": "^3.7.5",
     "wrtc": "^0.4.7"
   },
-  "dependencies": {}
+  "dependencies": {
+    "node-pre-gyp": "^0.17.0"
+  }
 }
