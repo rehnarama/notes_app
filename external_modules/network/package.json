@@ -9,9 +9,6 @@
     "build": "tsc",
     "build:watch": "tsc --watch"
   },
-  "network": {
-    "signalling": "1.0.0"
-  },
   "devDependencies": {
     "@types/jest": "^26.0.3",
     "jest": "^25.1.0",
