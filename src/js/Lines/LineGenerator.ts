@@ -2,6 +2,7 @@ import interpolateLine from "./LineInterpolation";
 import Pen, { AttributeData } from "../Pen/Pen";
 import { LineId } from "../Data/Lines/Lines";
 import { Color } from "./LineRenderer";
+import { lerp } from "../math";
 
 const DEFAULT_PRESSURE = 0.5;
 
@@ -13,6 +14,14 @@ class Point {
     this.x = x;
     this.y = y;
     this.pressure = pressure || DEFAULT_PRESSURE;
+  }
+
+  static lerp(a: Point, b: Point, t: number) {
+    return new Point(
+      lerp(a.x, b.x, t),
+      lerp(a.y, b.y, t),
+      lerp(a.pressure, b.pressure, t)
+    );
   }
 }
 interface Line {
