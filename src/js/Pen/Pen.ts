@@ -6,5 +6,5 @@ export interface AttributeData {
 }
 
 export default interface Pen {
-  generateAttributeData(line: Line): AttributeData;
+  generateAttributeData(line: Line, dejitter?: boolean): AttributeData;
 }

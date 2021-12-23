@@ -48,7 +48,7 @@ class Painter extends React.PureComponent<Props> {
   isDirty = false;
   hasNew = false;
 
-  lineGenerator = new LineGenerator(FeltPen);
+  lineGenerator = new LineGenerator(FeltPen, false, true);
   pointersRenderer: PointersRenderer | null = null;
   lineRenderer: LineRenderer | null = null;
   selectRenderer: LineRenderer | null = null;
@@ -168,7 +168,7 @@ class Painter extends React.PureComponent<Props> {
           bottom: Math.max(a.y, b.y),
           right: Math.max(a.x, b.x)
         });
-        const gen = new LineGenerator(FeltPen, false);
+        const gen = new LineGenerator(FeltPen, false, false);
         this.genBox(gen, box);
         this.selectRenderer?.loadData(gen);
 
@@ -284,7 +284,7 @@ class Painter extends React.PureComponent<Props> {
   }
 
   private markSelectedLines() {
-    const selectedGen = new LineGenerator(FeltPen, false);
+    const selectedGen = new LineGenerator(FeltPen, false, true);
     for (const [lineId, line] of this.selectedLines) {
       const selectionLine: Line = {
         points: line.points,

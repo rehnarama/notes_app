@@ -41,10 +41,12 @@ export default class LineGenerator {
   private vertices: number[] = [];
 
   private interpolate: boolean;
+  private dejitter: boolean;
 
-  constructor(pen: Pen, interpolate = false) {
+  constructor(pen: Pen, interpolate = false, dejitter = true) {
     this.pen = pen;
     this.interpolate = interpolate;
+    this.dejitter = dejitter;
   }
 
   public addLine(id: LineId, line: Line) {
@@ -68,7 +70,7 @@ export default class LineGenerator {
     let counter = 0;
     for (const [id, line] of this.lines) {
       if (this.dirtyLines.get(id)) {
-        const data = this.pen.generateAttributeData(line);
+        const data = this.pen.generateAttributeData(line, this.dejitter);
         this.lineVertices.set(id, data);
         this.dirtyLines.set(id, false);
       }
