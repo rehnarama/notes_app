@@ -1,7 +1,7 @@
 import { Hook } from "./utils";
 import { lerp } from "./math";
 
-const SCROLL_MULTIPLIER = 50;
+const SCROLL_MULTIPLIER = 1;
 
 interface Point {
   x: number;
@@ -314,12 +314,14 @@ export default class GestureRecognizer {
   }
 
   private wheelEventToDeltaPixels = (e: WheelEvent) => {
-    if (e.deltaMode === 0) {
-      return { x: e.deltaX / 200, y: e.deltaY / 200 };
-    } else if (e.deltaMode === 1) {
-      return { x: e.deltaX / 3, y: e.deltaY / 3 };
+    if (e.deltaMode === WheelEvent.DOM_DELTA_PIXEL) {
+      return { x: e.deltaX, y: e.deltaY };
+    } else if (e.deltaMode === WheelEvent.DOM_DELTA_LINE) {
+      return { x: e.deltaX / 20, y: e.deltaY / 20 };
+    } else if (e.deltaMode === WheelEvent.DOM_DELTA_PAGE) {
+      return { x: e.deltaX / document.body.clientWidth, y: e.deltaY / document.body.clientHeight };
     } else {
-      return { x: e.deltaX / 800, y: e.deltaY / 800 };
+      return { x: e.deltaX, y: e.deltaY };
     }
   };
 
@@ -327,7 +329,6 @@ export default class GestureRecognizer {
     const delta = this.wheelEventToDeltaPixels(e);
     if (e.ctrlKey) {
       let zoomDelta = -delta.y * SCROLL_MULTIPLIER;
-
       this.onZoom.call({
         delta: zoomDelta,
         around: { x: e.offsetX, y: e.offsetY },
