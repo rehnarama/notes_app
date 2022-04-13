@@ -1,8 +1,16 @@
 import GLApp from "../GLApp";
-import { mat3 } from "gl-matrix";
+import { vec2, mat3 } from "gl-matrix";
 
 export default class Canvas {
   private glApp: GLApp;
+
+  public get width() {
+    return this.glApp.width;
+  }
+
+  public get height() {
+    return this.glApp.height;
+  }
 
   public _position = { x: 0, y: 0 };
   public set position(value: { x: number; y: number }) {
@@ -43,6 +51,10 @@ export default class Canvas {
     return mat3.mul(mat3.create(), this.projection, this.view);
   }
 
+  public get screen(): vec2 {
+    return vec2.fromValues(this.width, this.height);
+  }
+
   constructor(glApp: GLApp) {
     this.glApp = glApp;
   }
@@ -63,5 +75,4 @@ export default class Canvas {
 
     this.zoom += zoomDelta;
   };
-
 }
