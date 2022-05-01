@@ -1,21 +1,21 @@
 import GLApp from "../GLApp";
-import { vec2, mat3 } from "gl-matrix";
+import { vec2, mat3, mat4 } from "gl-matrix";
 
 export default class Canvas {
-  private glApp: GLApp;
+  private glApp: GLApp | null = null;
 
   public get width() {
-    return this.glApp.width;
+    return this.glApp?.width ?? 0;
   }
 
   public get height() {
-    return this.glApp.height;
+    return this.glApp?.height ?? 0;
   }
 
   public _position = { x: 0, y: 0 };
   public set position(value: { x: number; y: number }) {
     this._position = value;
-    this.glApp.requestFrame();
+    this.glApp?.requestFrame();
   }
   public get position() {
     return this._position;
@@ -23,7 +23,7 @@ export default class Canvas {
   public _zoom: number = 1;
   public set zoom(value: number) {
     this._zoom = value;
-    this.glApp.requestFrame();
+    this.glApp?.requestFrame();
   }
   public get zoom() {
     return this._zoom;
@@ -32,11 +32,20 @@ export default class Canvas {
   public get projection(): mat3 {
     const projection = mat3.projection(
       mat3.create(),
-      this.glApp.width,
-      this.glApp.height
+      this.width,
+      this.height
     );
 
     return projection;
+  }
+  public get view4(): mat4 {
+    const scale = mat4.fromScaling(mat4.create(), [this.zoom, this.zoom, this.zoom]);
+    const translation = mat4.fromTranslation(mat4.create(), [
+      this.position.x,
+      this.position.y,
+      0
+    ]);
+    return mat4.mul(mat4.create(), translation, scale);
   }
   public get view(): mat3 {
     const scale = mat3.fromScaling(mat3.create(), [this.zoom, this.zoom]);
@@ -55,7 +64,7 @@ export default class Canvas {
     return vec2.fromValues(this.width, this.height);
   }
 
-  constructor(glApp: GLApp) {
+  public setGlApp(glApp: GLApp) {
     this.glApp = glApp;
   }
 
